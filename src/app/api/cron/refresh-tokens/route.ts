@@ -1,10 +1,12 @@
 /**
  * GET /api/cron/refresh-tokens
  *
- * Vercel Cron job that re-analyzes popular tokens so the search page
- * always has fresh data. Runs daily at 6:00 AM UTC.
+ * Re-analyzes popular tokens so the search page always has fresh data.
+ * Called by an external cron service (cron-job.org) every 20 minutes.
  *
  * Protected by CRON_SECRET to prevent unauthorized invocations.
+ * Token analyses are cached for 1 hour, so only ~3 of every 6 calls
+ * actually hit external APIs.
  */
 
 import { NextRequest, NextResponse } from "next/server";
