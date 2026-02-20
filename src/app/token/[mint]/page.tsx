@@ -246,11 +246,11 @@ export default function TokenPage() {
                       </span>
                       <CopyButton text={data.deployerWallet} />
                     </div>
-                    {data.deployerScore !== null && (
+                    {data.deployerTier && (
                       <p className="text-sm text-muted-foreground">
-                        Integer Score:{" "}
-                        <span className="font-semibold text-foreground">
-                          {data.deployerScore}
+                        Reputation Tier:{" "}
+                        <span className="font-semibold capitalize text-foreground">
+                          {data.deployerTier}
                         </span>
                       </p>
                     )}
