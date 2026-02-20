@@ -128,6 +128,25 @@ export interface WatchlistItem {
 export type WatchlistItemInsert = Omit<WatchlistItem, "id" | "created_at" | "updated_at">;
 
 // ---------------------------------------------------------------------------
+// Notifications (Supabase table: notifications)
+// ---------------------------------------------------------------------------
+
+export interface Notification {
+  id: string;
+  user_wallet: string;
+  mint: string;
+  token_name: string | null;
+  type: "score_change" | "new_risk_flag";
+  message: string;
+  old_value: number | null;
+  new_value: number | null;
+  read: boolean;
+  created_at: string;
+}
+
+export type NotificationInsert = Omit<Notification, "id" | "created_at">;
+
+// ---------------------------------------------------------------------------
 // Supabase Database Type Map
 // ---------------------------------------------------------------------------
 
@@ -156,6 +175,12 @@ export interface Database {
         Row: WatchlistItem;
         Insert: WatchlistItemInsert;
         Update: Partial<WatchlistItemInsert>;
+        Relationships: [];
+      };
+      notifications: {
+        Row: Notification;
+        Insert: NotificationInsert;
+        Update: Partial<NotificationInsert>;
         Relationships: [];
       };
     };
