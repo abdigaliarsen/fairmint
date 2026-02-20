@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import FairScoreDisplay from "@/components/features/FairScoreDisplay";
 import ScoreRecommendations from "@/components/features/ScoreRecommendations";
+import AISummaryCard from "@/components/features/AISummaryCard";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
 import type { FairScoreData, FairScoreTier } from "@/types/database";
@@ -155,6 +156,20 @@ export default function ReputationPage() {
           </div>
 
           <Separator />
+
+          {/* AI Analysis */}
+          <AISummaryCard
+            type="reputation"
+            context={data ? {
+              wallet: truncated,
+              decimalScore: data.fairScore?.decimalScore,
+              integerScore: data.fairScore?.integerScore,
+              walletScore: data.walletScore,
+              tier: data.fairScore?.tier,
+              badgeCount: data.fairScore?.badges?.length ?? 0,
+              badgeLabels: data.fairScore?.badges?.map((b: { label: string }) => b.label).join(", "),
+            } : null}
+          />
 
           {/* Badges */}
           {data.fairScore?.badges && data.fairScore.badges.length > 0 && (

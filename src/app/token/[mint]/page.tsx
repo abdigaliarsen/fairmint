@@ -27,6 +27,7 @@ import HolderQualityBar from "@/components/features/HolderQualityBar";
 import RiskFlags from "@/components/features/RiskFlags";
 import HolderGraph from "@/components/features/HolderGraph";
 import ScoreRecommendations from "@/components/features/ScoreRecommendations";
+import AISummaryCard from "@/components/features/AISummaryCard";
 import { useTokenAnalysis } from "@/hooks/useTokenAnalysis";
 import { useHolders } from "@/hooks/useHolders";
 import { generateTokenTips } from "@/lib/recommendations";
@@ -205,6 +206,24 @@ export default function TokenPage() {
           </div>
 
           <Separator />
+
+          {/* --------------------------------------------------------------- */}
+          {/* AI Analysis                                                     */}
+          {/* --------------------------------------------------------------- */}
+          <AISummaryCard
+            type="token"
+            context={data ? {
+              name: data.name,
+              symbol: data.symbol,
+              trustRating: data.trustRating,
+              deployerScore: data.deployerScore,
+              deployerTier: data.deployerTier,
+              holderCount: data.holderCount,
+              topHolderConcentration: data.topHolderConcentration,
+              holderQualityScore: data.holderQualityScore,
+              riskFlags: data.riskFlags,
+            } : null}
+          />
 
           {/* --------------------------------------------------------------- */}
           {/* Trust Rating                                                    */}

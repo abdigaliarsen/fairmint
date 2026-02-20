@@ -25,6 +25,7 @@ import FairScoreDisplay from "@/components/features/FairScoreDisplay";
 import TokenCard from "@/components/features/TokenCard";
 import TokenGraph from "@/components/features/TokenGraph";
 import ScoreRecommendations from "@/components/features/ScoreRecommendations";
+import AISummaryCard from "@/components/features/AISummaryCard";
 import { useDeployerProfile } from "@/hooks/useDeployerProfile";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
@@ -192,6 +193,21 @@ export default function DeployerPage() {
           </div>
 
           <Separator />
+
+          {/* --------------------------------------------------------------- */}
+          {/* AI Analysis                                                     */}
+          {/* --------------------------------------------------------------- */}
+          <AISummaryCard
+            type="deployer"
+            context={data ? {
+              wallet: truncateAddress(data.wallet),
+              score: data.fairScore?.score,
+              tier: data.fairScore?.tier,
+              tokenCount: data.tokenCount,
+              badgeCount: data.fairScore?.badges?.length ?? 0,
+              badgeLabels: data.fairScore?.badges?.map((b) => b.label).join(", "),
+            } : null}
+          />
 
           {/* --------------------------------------------------------------- */}
           {/* Score Breakdown                                                 */}
