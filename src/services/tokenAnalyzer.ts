@@ -140,13 +140,15 @@ function detectRiskFlags(
   deployerTier: FairScoreTier | null,
   holders: TokenHolder[],
   metadata: TokenMetadata,
-  connectedHolderCount: number = 0
+  connectedHolderCount: number = 0,
+  deployerWallet: string | null = null,
+  lpVaults: LPVault[] = [],
+  dexData: TokenLiquidity | null = null,
+  rugCheckResult: RugCheckResult | null = null,
 ): RiskFlag[] {
   const flags: RiskFlag[] = [];
 
-  // 1. Low deployer score — only flag truly low scores.
-  // Many legitimate token deployers are program wallets with low FairScale
-  // scores, so this flag is informational rather than alarming.
+  // 1. Low deployer score
   if (deployerScore !== null && deployerScore < 100) {
     flags.push(
       makeRiskFlag(
@@ -157,7 +159,7 @@ function detectRiskFlags(
     );
   }
 
-  // 2. Concentrated holdings — top holder owns >50%
+  // 2. Concentrated holdings — top holder owns >25%
   if (holders.length > 0) {
     const topHolder = holders[0];
     if (topHolder.percentage > 80) {
@@ -187,7 +189,7 @@ function detectRiskFlags(
     }
   }
 
-  // 4. Very few holders
+  // 3. Very few holders
   if (holders.length < 5) {
     flags.push(
       makeRiskFlag(
@@ -198,7 +200,7 @@ function detectRiskFlags(
     );
   }
 
-  // 5. Mint authority still active (potential for infinite minting)
+  // 4. Mint authority still active
   if (metadata.mintAuthority) {
     flags.push(
       makeRiskFlag(
@@ -209,7 +211,7 @@ function detectRiskFlags(
     );
   }
 
-  // 6. Freeze authority still active
+  // 5. Freeze authority still active
   if (metadata.freezeAuthority) {
     flags.push(
       makeRiskFlag(
@@ -220,7 +222,7 @@ function detectRiskFlags(
     );
   }
 
-  // 7. Connected wallets — basic Sybil detection
+  // 6. Connected wallets — Sybil detection
   if (connectedHolderCount >= 4) {
     flags.push(
       makeRiskFlag(
@@ -237,6 +239,123 @@ function detectRiskFlags(
         `${connectedHolderCount} of the top holders share recent transaction history.`
       )
     );
+  }
+
+  // 7. Creator still holds supply
+  if (deployerWallet) {
+    const deployerHolding = holders.find((h) => h.owner === deployerWallet);
+    if (deployerHolding) {
+      if (deployerHolding.percentage > 50) {
+        flags.push(
+          makeRiskFlag(
+            "high",
+            "Creator Holds Majority",
+            `The token deployer holds ${deployerHolding.percentage.toFixed(1)}% of the sampled supply.`
+          )
+        );
+      } else if (deployerHolding.percentage > 20) {
+        flags.push(
+          makeRiskFlag(
+            "medium",
+            "Creator Holds Supply",
+            `The token deployer holds ${deployerHolding.percentage.toFixed(1)}% of the sampled supply.`
+          )
+        );
+      }
+    }
+  }
+
+  // 8. Top 5 concentration
+  if (holders.length >= 5) {
+    const top5Pct = holders.slice(0, 5).reduce((sum, h) => sum + h.percentage, 0);
+    if (top5Pct > 80) {
+      flags.push(
+        makeRiskFlag(
+          "high",
+          "Top 5 Concentration",
+          `The top 5 holders control ${top5Pct.toFixed(1)}% of the sampled supply.`
+        )
+      );
+    }
+  }
+
+  // 9. Top 10 concentration
+  if (holders.length >= 10) {
+    const top10Pct = holders.slice(0, 10).reduce((sum, h) => sum + h.percentage, 0);
+    if (top10Pct > 90) {
+      flags.push(
+        makeRiskFlag(
+          "medium",
+          "Top 10 Concentration",
+          `The top 10 holders control ${top10Pct.toFixed(1)}% of the sampled supply.`
+        )
+      );
+    }
+  }
+
+  // 10. No DEX liquidity
+  if (lpVaults.length === 0 && !dexData) {
+    flags.push(
+      makeRiskFlag(
+        "high",
+        "No DEX Liquidity",
+        "No liquidity pools or DEX trading pairs detected for this token."
+      )
+    );
+  }
+
+  // 11. Low liquidity
+  if (dexData && dexData.totalLiquidityUsd < 1000) {
+    flags.push(
+      makeRiskFlag(
+        "medium",
+        "Low Liquidity",
+        `Total DEX liquidity is only $${dexData.totalLiquidityUsd.toFixed(0)}.`
+      )
+    );
+  }
+
+  // 12. Single DEX
+  if (lpVaults.length === 1 && dexData) {
+    flags.push(
+      makeRiskFlag(
+        "low",
+        "Single DEX",
+        `Liquidity exists on only one DEX (${lpVaults[0].dex}), creating a single point of failure.`
+      )
+    );
+  }
+
+  // 13. Mutable metadata
+  if (metadata.updateAuthority) {
+    flags.push(
+      makeRiskFlag(
+        "low",
+        "Mutable Metadata",
+        "The token's metadata can be changed by the update authority."
+      )
+    );
+  }
+
+  // 14. RugCheck danger
+  if (rugCheckResult) {
+    if (rugCheckResult.riskLevel === "Danger") {
+      flags.push(
+        makeRiskFlag(
+          "high",
+          "RugCheck: Danger",
+          `RugCheck flagged this token as dangerous with ${rugCheckResult.riskCount} risk(s) detected.`
+        )
+      );
+    } else if (rugCheckResult.riskCount >= 3) {
+      flags.push(
+        makeRiskFlag(
+          "medium",
+          "RugCheck: Multiple Warnings",
+          `RugCheck detected ${rugCheckResult.riskCount} risks for this token.`
+        )
+      );
+    }
   }
 
   return flags;
@@ -490,7 +609,11 @@ export async function analyzeToken(
     deployerTier,
     holders,
     metadata,
-    connectedHolderCount
+    connectedHolderCount,
+    deployerWallet,
+    holderAnalysis.lpVaults,
+    dexData,
+    rugCheckResult
   );
 
   // 7. Calculate composite trust rating
@@ -541,6 +664,7 @@ export async function analyzeToken(
     holder_count: holders.length,
     top_holder_concentration: topHolderConcentration,
     risk_flags: riskFlags,
+    token_age_days: tokenAgeDays,
     raw_metadata: metadata.raw as unknown as Record<string, unknown>,
     analyzed_at: analyzedAt,
   };

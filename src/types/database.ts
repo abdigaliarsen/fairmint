@@ -110,6 +110,7 @@ export interface TokenAnalysis {
   holder_count: number;
   top_holder_concentration: number;
   risk_flags: RiskFlag[];
+  token_age_days: number | null;
   raw_metadata: Record<string, unknown> | null;
   analyzed_at: string;
   created_at: string;
