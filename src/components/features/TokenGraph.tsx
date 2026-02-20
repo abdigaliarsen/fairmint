@@ -5,12 +5,20 @@ import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
-import type { HolderNode } from "@/hooks/useHolders";
 import type { FairScoreTier } from "@/types/database";
 
-interface HolderGraphProps {
-  holders: HolderNode[];
-  tokenName: string | null;
+export interface TokenNode {
+  mint: string;
+  name: string | null;
+  symbol: string | null;
+  trustRating: number;
+  deployerTier: FairScoreTier | null;
+}
+
+interface TokenGraphProps {
+  tokens: TokenNode[];
+  walletLabel: string;
+  walletTier: FairScoreTier;
   loading?: boolean;
 }
 
@@ -22,49 +30,58 @@ const TIER_FILL: Record<FairScoreTier, string> = {
   unrated: "#9ca3af",
 };
 
+function ratingColor(rating: number): string {
+  if (rating >= 60) return "#059669"; // emerald-600
+  if (rating >= 30) return "#ca8a04"; // yellow-600
+  return "#dc2626"; // red-600
+}
+
 const CENTER_X = 200;
 const CENTER_Y = 200;
 const ORBIT_RADIUS = 130;
 
-export default function HolderGraph({
-  holders,
-  tokenName,
+export default function TokenGraph({
+  tokens,
+  walletLabel,
+  walletTier,
   loading,
-}: HolderGraphProps) {
+}: TokenGraphProps) {
   const router = useRouter();
+
   const nodes = useMemo(() => {
-    if (holders.length === 0) return [];
+    if (tokens.length === 0) return [];
 
-    const maxPct = Math.max(...holders.map((h) => h.percentage), 1);
-    const minR = 12;
-    const maxR = 28;
-
-    return holders.map((h, i) => {
-      const angle = (2 * Math.PI * i) / holders.length - Math.PI / 2;
-      const radius = minR + (h.percentage / maxPct) * (maxR - minR);
+    return tokens.map((t, i) => {
+      const angle = (2 * Math.PI * i) / tokens.length - Math.PI / 2;
+      // Node size based on trust rating (higher = bigger)
+      const r = 16 + (t.trustRating / 100) * 14;
+      const color = ratingColor(t.trustRating);
+      const label = t.symbol ?? t.name?.slice(0, 6) ?? t.mint.slice(0, 4);
 
       return {
-        ...h,
+        ...t,
         cx: CENTER_X + ORBIT_RADIUS * Math.cos(angle),
         cy: CENTER_Y + ORBIT_RADIUS * Math.sin(angle),
-        r: radius,
-        fill: TIER_FILL[h.tier] || TIER_FILL.unrated,
-        truncAddr: `${h.owner.slice(0, 4)}...${h.owner.slice(-4)}`,
+        r,
+        color,
+        label,
       };
     });
-  }, [holders]);
+  }, [tokens]);
 
   if (loading) {
     return <Skeleton className="h-[400px] w-full rounded-lg" />;
   }
 
-  if (holders.length === 0) {
+  if (tokens.length === 0) {
     return (
       <p className="py-6 text-center text-sm text-muted-foreground">
-        No holder data available for visualization.
+        No deployed tokens found for this wallet.
       </p>
     );
   }
+
+  const centerFill = TIER_FILL[walletTier] || TIER_FILL.unrated;
 
   return (
     <div className="flex flex-col gap-4">
@@ -72,12 +89,12 @@ export default function HolderGraph({
         viewBox="0 0 400 400"
         className="mx-auto w-full max-w-[400px]"
         role="img"
-        aria-label={`Holder network graph for ${tokenName ?? "token"}`}
+        aria-label={`Token network for deployer ${walletLabel}`}
       >
-        {/* Lines from center to each node */}
+        {/* Lines from center to each token node */}
         {nodes.map((node) => (
           <line
-            key={`line-${node.owner}`}
+            key={`line-${node.mint}`}
             x1={CENTER_X}
             y1={CENTER_Y}
             x2={node.cx}
@@ -88,13 +105,13 @@ export default function HolderGraph({
           />
         ))}
 
-        {/* Center node (token) */}
+        {/* Center node (deployer wallet) */}
         <circle
           cx={CENTER_X}
           cy={CENTER_Y}
           r={32}
-          fill="currentColor"
-          className="text-emerald-600"
+          fill={centerFill}
+          fillOpacity={0.9}
         />
         <text
           x={CENTER_X}
@@ -102,25 +119,25 @@ export default function HolderGraph({
           textAnchor="middle"
           dominantBaseline="central"
           fill="white"
-          fontSize={10}
+          fontSize={9}
           fontWeight={600}
         >
-          TOKEN
+          {walletLabel}
         </text>
 
-        {/* Holder nodes — clickable, navigate to reputation page */}
+        {/* Token nodes — clickable, navigate to token page */}
         {nodes.map((node) => (
           <g
-            key={node.owner}
+            key={node.mint}
             className="cursor-pointer"
             role="link"
             tabIndex={0}
-            aria-label={`View reputation for ${node.truncAddr}`}
-            onClick={() => router.push(`/reputation/${node.owner}`)}
+            aria-label={`View ${node.name ?? node.symbol ?? node.mint} token`}
+            onClick={() => router.push(`/token/${node.mint}`)}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                router.push(`/reputation/${node.owner}`);
+                router.push(`/token/${node.mint}`);
               }
             }}
           >
@@ -128,9 +145,9 @@ export default function HolderGraph({
               cx={node.cx}
               cy={node.cy}
               r={node.r}
-              fill={node.fill}
+              fill={node.color}
               fillOpacity={0.85}
-              stroke={node.fill}
+              stroke={node.color}
               strokeWidth={2}
               strokeOpacity={0.3}
               className="transition-opacity hover:opacity-70"
@@ -144,7 +161,7 @@ export default function HolderGraph({
               fontSize={9}
               style={{ textDecoration: "underline" }}
             >
-              {node.truncAddr}
+              {node.label}
             </text>
             <text
               x={node.cx}
@@ -154,35 +171,29 @@ export default function HolderGraph({
               fontSize={9}
               fontWeight={600}
             >
-              {node.percentage.toFixed(0)}%
+              {node.trustRating}
             </text>
           </g>
         ))}
       </svg>
 
-      {/* Tier legend */}
+      {/* Legend */}
       <div
         className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground"
-        aria-label="Tier color legend"
+        aria-label="Trust rating color legend"
       >
-        {(
-          ["platinum", "gold", "silver", "bronze", "unrated"] as FairScoreTier[]
-        ).map((tier) => {
-          const colors = getTierColor(tier);
-          return (
-            <div key={tier} className="flex items-center gap-1.5">
-              <span
-                className={cn(
-                  "inline-block size-2.5 rounded-full border",
-                  colors.bg,
-                  colors.border
-                )}
-                aria-hidden="true"
-              />
-              <span className="capitalize">{tier}</span>
-            </div>
-          );
-        })}
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block size-2.5 rounded-full bg-emerald-600" />
+          <span>Trusted (60+)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block size-2.5 rounded-full bg-yellow-600" />
+          <span>Caution (30-59)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block size-2.5 rounded-full bg-red-600" />
+          <span>Risky (&lt;30)</span>
+        </div>
       </div>
     </div>
   );

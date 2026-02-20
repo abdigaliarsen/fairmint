@@ -23,6 +23,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import FairScoreDisplay from "@/components/features/FairScoreDisplay";
 import TokenCard from "@/components/features/TokenCard";
+import TokenGraph from "@/components/features/TokenGraph";
 import ScoreRecommendations from "@/components/features/ScoreRecommendations";
 import { useDeployerProfile } from "@/hooks/useDeployerProfile";
 import { cn } from "@/lib/utils";
@@ -299,6 +300,34 @@ export default function DeployerPage() {
           {/* --------------------------------------------------------------- */}
           {data.recommendations && data.recommendations.length > 0 && (
             <ScoreRecommendations recommendations={data.recommendations} />
+          )}
+
+          {/* --------------------------------------------------------------- */}
+          {/* Token Network Graph                                             */}
+          {/* --------------------------------------------------------------- */}
+          {data.deployedTokens.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Token Network</CardTitle>
+                <CardDescription>
+                  Tokens deployed by this wallet. Node size reflects trust
+                  rating. Click a token to view its analysis.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TokenGraph
+                  tokens={data.deployedTokens.map((t) => ({
+                    mint: t.mint,
+                    name: t.name,
+                    symbol: t.symbol,
+                    trustRating: t.trust_rating,
+                    deployerTier: t.deployer_tier,
+                  }))}
+                  walletLabel={truncateAddress(data.wallet)}
+                  walletTier={data.fairScore?.tier ?? "unrated"}
+                />
+              </CardContent>
+            </Card>
           )}
 
           {/* --------------------------------------------------------------- */}
