@@ -13,7 +13,7 @@ import bs58 from "bs58";
  * CredentialsProvider which verifies it and creates a session.
  */
 export function useWalletAuth() {
-  const { publicKey, signMessage, connected, disconnect } = useWallet();
+  const { publicKey, signMessage, connected } = useWallet();
   const { data: session, status } = useSession();
   const signingRef = useRef(false);
 
@@ -38,14 +38,13 @@ export function useWalletAuth() {
         publicKey: publicKey.toBase58(),
         redirect: false,
       });
-    } catch (err) {
-      // User rejected the signature — disconnect wallet
-      console.warn("Wallet signature rejected:", err);
-      disconnect();
+    } catch {
+      // User rejected the signature — stay connected but unauthenticated.
+      // They can retry by reconnecting or refreshing.
     } finally {
       signingRef.current = false;
     }
-  }, [publicKey, signMessage, isSessionForCurrentWallet, disconnect]);
+  }, [publicKey, signMessage, isSessionForCurrentWallet]);
 
   // Auto-trigger sign-in when wallet connects but session doesn't match
   useEffect(() => {
