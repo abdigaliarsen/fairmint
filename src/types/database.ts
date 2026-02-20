@@ -173,6 +173,27 @@ export interface Notification {
 export type NotificationInsert = Omit<Notification, "id" | "created_at">;
 
 // ---------------------------------------------------------------------------
+// Browsing History (Supabase table: browsing_history)
+// ---------------------------------------------------------------------------
+
+export type BrowsingHistoryType = "token" | "deployer" | "reputation";
+
+export interface BrowsingHistoryEntry {
+  id: string;
+  wallet: string;
+  type: BrowsingHistoryType;
+  subject: string;
+  name: string | null;
+  symbol: string | null;
+  score: number | null;
+  tier: FairScoreTier | null;
+  visited_at: string;
+  created_at: string;
+}
+
+export type BrowsingHistoryInsert = Omit<BrowsingHistoryEntry, "id" | "created_at">;
+
+// ---------------------------------------------------------------------------
 // Supabase Database Type Map
 // ---------------------------------------------------------------------------
 
@@ -207,6 +228,12 @@ export interface Database {
         Row: Notification;
         Insert: NotificationInsert;
         Update: Partial<NotificationInsert>;
+        Relationships: [];
+      };
+      browsing_history: {
+        Row: BrowsingHistoryEntry;
+        Insert: BrowsingHistoryInsert;
+        Update: Partial<BrowsingHistoryInsert>;
         Relationships: [];
       };
     };
