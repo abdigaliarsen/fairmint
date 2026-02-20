@@ -24,7 +24,6 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
 import FairScoreDisplay from "@/components/features/FairScoreDisplay";
 import TrustRating from "@/components/features/TrustRating";
 import HolderQualityBar from "@/components/features/HolderQualityBar";
@@ -36,6 +35,7 @@ import ScoreHistoryChart from "@/components/features/ScoreHistoryChart";
 import LiquidityCard from "@/components/features/LiquidityCard";
 import AuthorityBadges from "@/components/features/AuthorityBadges";
 import ScoringMethodology from "@/components/features/ScoringMethodology";
+import AnalysisProgress from "@/components/features/AnalysisProgress";
 import { useTokenAnalysis } from "@/hooks/useTokenAnalysis";
 import { useHolders } from "@/hooks/useHolders";
 import { generateTokenTips } from "@/lib/recommendations";
@@ -83,69 +83,6 @@ function CopyButton({ text }: { text: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Loading Skeleton
-// ---------------------------------------------------------------------------
-
-function TokenPageSkeleton() {
-  return (
-    <div className="flex flex-col gap-6">
-      {/* Header skeleton */}
-      <div className="flex flex-col gap-2">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-5 w-64" />
-      </div>
-
-      {/* Trust Rating skeleton */}
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-5 w-28" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="mt-2 h-2 w-full" />
-        </CardContent>
-      </Card>
-
-      {/* Deployer info skeleton */}
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-5 w-32" />
-        </CardHeader>
-        <CardContent className="flex items-center gap-6">
-          <Skeleton className="size-24 rounded-full" />
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Holder Quality skeleton */}
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-5 w-28" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="mt-2 h-2 w-full" />
-        </CardContent>
-      </Card>
-
-      {/* Risk Flags skeleton */}
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-5 w-24" />
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Token Lookup Page
 // ---------------------------------------------------------------------------
 
@@ -185,7 +122,7 @@ export default function TokenPage() {
         Back
       </Button>
 
-      {loading && <TokenPageSkeleton />}
+      {loading && <AnalysisProgress />}
 
       {error && !loading && (
         <Card className="border-red-200 dark:border-red-900">
