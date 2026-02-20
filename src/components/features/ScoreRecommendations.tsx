@@ -1,6 +1,6 @@
 "use client";
 
-import { Lightbulb, ArrowUpRight } from "lucide-react";
+import { Lightbulb } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -69,26 +69,23 @@ export default function ScoreRecommendations({
                 styles.border
               )}
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-sm font-semibold text-foreground">
-                      {rec.title}
-                    </h4>
-                    <Badge
-                      className={cn(
-                        "border text-xs capitalize",
-                        styles.badge
-                      )}
-                    >
-                      {rec.priority}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {rec.description}
-                  </p>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-semibold text-foreground">
+                    {rec.title}
+                  </h4>
+                  <Badge
+                    className={cn(
+                      "border text-xs capitalize",
+                      styles.badge
+                    )}
+                  >
+                    {rec.priority}
+                  </Badge>
                 </div>
-                <ArrowUpRight className="size-4 shrink-0 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  {rec.description}
+                </p>
               </div>
             </div>
           );
