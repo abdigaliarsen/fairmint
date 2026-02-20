@@ -43,13 +43,13 @@ export function useWatchlist(wallet: string | null): UseWatchlistReturn {
   const [items, setItems] = useState<WatchlistEntry[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchWatchlist = useCallback(async () => {
+  const fetchWatchlist = useCallback(async (silent = false) => {
     if (!wallet) {
       setItems([]);
       return;
     }
 
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const res = await fetch(
         `/api/watchlist?wallet=${encodeURIComponent(wallet)}`
@@ -57,13 +57,13 @@ export function useWatchlist(wallet: string | null): UseWatchlistReturn {
       if (res.ok) {
         const data = await res.json();
         setItems(data.items ?? []);
-      } else {
+      } else if (!silent) {
         setItems([]);
       }
     } catch {
-      setItems([]);
+      if (!silent) setItems([]);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [wallet]);
 
@@ -82,9 +82,9 @@ export function useWatchlist(wallet: string | null): UseWatchlistReturn {
           body: JSON.stringify({ wallet, tokenMint }),
         });
 
-        if (res.ok || res.status === 201) {
-          // Refetch to get enriched data
-          await fetchWatchlist();
+        if (res.ok) {
+          // Silent refetch to get enriched data without triggering loading state
+          await fetchWatchlist(true);
         }
       } catch {
         // Silently fail — the UI will still show the current state
@@ -108,11 +108,11 @@ export function useWatchlist(wallet: string | null): UseWatchlistReturn {
         });
 
         if (!res.ok) {
-          // Revert on failure
-          await fetchWatchlist();
+          // Revert on failure (silent to avoid skeleton flash)
+          await fetchWatchlist(true);
         }
       } catch {
-        await fetchWatchlist();
+        await fetchWatchlist(true);
       }
     },
     [wallet, fetchWatchlist]
