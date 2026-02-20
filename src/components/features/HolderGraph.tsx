@@ -206,7 +206,7 @@ export default function HolderGraph({
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Holding</span>
                     <span className="font-medium">
-                      {hoveredNode.percentage.toFixed(1)}%
+                      {hoveredNode.percentage.toFixed(2)}%
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
