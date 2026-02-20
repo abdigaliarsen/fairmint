@@ -41,6 +41,9 @@ import { useTokenAnalysis } from "@/hooks/useTokenAnalysis";
 import { useHolders } from "@/hooks/useHolders";
 import { generateTokenTips } from "@/lib/recommendations";
 import { useBrowsingHistory } from "@/hooks/useBrowsingHistory";
+import { useWatchlist } from "@/hooks/useWatchlist";
+import { useSession } from "next-auth/react";
+import WatchlistButton from "@/components/features/WatchlistButton";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
 import type { FairScoreTier } from "@/types/database";
@@ -96,6 +99,9 @@ export default function TokenPage() {
   const { data, loading, error, refetch } = useTokenAnalysis(mint);
   const { holders, loading: holdersLoading } = useHolders(mint, 10);
   const { recordVisit } = useBrowsingHistory();
+  const { data: session } = useSession();
+  const { items: watchlistItems, addToken, removeToken, loading: watchlistLoading } = useWatchlist(session?.user?.wallet ?? null);
+  const isWatched = data ? watchlistItems.some((i) => i.mint === data.mint) : false;
 
   useEffect(() => {
     if (data && !loading) {
@@ -175,6 +181,11 @@ export default function TokenPage() {
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <span className="font-mono">{truncateAddress(data.mint)}</span>
               <CopyButton text={data.mint} />
+              <WatchlistButton
+                isWatched={isWatched}
+                onToggle={() => isWatched ? removeToken(data.mint) : addToken(data.mint)}
+                loading={watchlistLoading}
+              />
             </div>
 
             {/* Token Age */}

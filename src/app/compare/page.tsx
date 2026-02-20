@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Scale } from "lucide-react";
 import ComparisonSlot from "@/components/features/ComparisonSlot";
+import SuggestionPanel from "@/components/features/SuggestionPanel";
 import { useFairScore } from "@/hooks/useFairScore";
 import { cn } from "@/lib/utils";
 import type { TrustAnalysis } from "@/services/tokenAnalyzer";
@@ -144,6 +145,11 @@ export default function ComparePage() {
             onRemove={() => handleRemove(i)}
           />
         ))}
+      </div>
+
+      {/* Suggestion panel for quick-add via drag & drop */}
+      <div className="mx-auto mt-8 max-w-3xl">
+        <SuggestionPanel />
       </div>
     </div>
   );

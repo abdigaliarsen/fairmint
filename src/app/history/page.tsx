@@ -14,6 +14,8 @@ import {
   useBrowsingHistory,
   type LocalHistoryEntry,
 } from "@/hooks/useBrowsingHistory";
+import { useWatchlist } from "@/hooks/useWatchlist";
+import WatchlistButton from "@/components/features/WatchlistButton";
 import type { BrowsingHistoryType, FairScoreTier } from "@/types/database";
 
 // ---------------------------------------------------------------------------
@@ -77,7 +79,17 @@ function getTypeHref(type: BrowsingHistoryType, subject: string): string {
 // History Entry Card
 // ---------------------------------------------------------------------------
 
-function HistoryEntryCard({ entry }: { entry: LocalHistoryEntry }) {
+function HistoryEntryCard({
+  entry,
+  isWatched,
+  onToggleWatchlist,
+  watchlistLoading,
+}: {
+  entry: LocalHistoryEntry;
+  isWatched: boolean;
+  onToggleWatchlist: () => void;
+  watchlistLoading: boolean;
+}) {
   const Icon = getTypeIcon(entry.type);
   const href = getTypeHref(entry.type, entry.subject);
   const tierColors = entry.tier
@@ -134,6 +146,19 @@ function HistoryEntryCard({ entry }: { entry: LocalHistoryEntry }) {
             )}
           </div>
 
+          {/* Watchlist toggle */}
+          <div
+            className="shrink-0"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          >
+            <WatchlistButton
+              isWatched={isWatched}
+              onToggle={onToggleWatchlist}
+              loading={watchlistLoading}
+              size="sm"
+            />
+          </div>
+
           {/* Timestamp */}
           <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">
             {relativeTime(entry.visitedAt)}
@@ -151,6 +176,8 @@ function HistoryEntryCard({ entry }: { entry: LocalHistoryEntry }) {
 export default function HistoryPage() {
   const { entries, clearHistory } = useBrowsingHistory();
   const { data: session } = useSession();
+  const { items: watchlistItems, addToken, removeToken, loading: watchlistLoading } = useWatchlist(session?.user?.wallet ?? null);
+  const watchlistMints = useMemo(() => new Set(watchlistItems.map((i) => i.mint)), [watchlistItems]);
   const [typeFilter, setTypeFilter] = useState<
     BrowsingHistoryType | "all"
   >("all");
@@ -235,7 +262,17 @@ export default function HistoryPage() {
       {filtered.length > 0 ? (
         <div className="flex flex-col gap-2">
           {filtered.map((entry) => (
-            <HistoryEntryCard key={entry.id} entry={entry} />
+            <HistoryEntryCard
+              key={entry.id}
+              entry={entry}
+              isWatched={watchlistMints.has(entry.subject)}
+              onToggleWatchlist={() =>
+                watchlistMints.has(entry.subject)
+                  ? removeToken(entry.subject)
+                  : addToken(entry.subject)
+              }
+              watchlistLoading={watchlistLoading}
+            />
           ))}
         </div>
       ) : entries.length > 0 ? (

@@ -31,6 +31,9 @@ import WalletAnalyticsChart from "@/components/features/WalletAnalyticsChart";
 import DeployerTimeline from "@/components/features/DeployerTimeline";
 import { useDeployerProfile } from "@/hooks/useDeployerProfile";
 import { useBrowsingHistory } from "@/hooks/useBrowsingHistory";
+import { useWatchlist } from "@/hooks/useWatchlist";
+import { useSession } from "next-auth/react";
+import WatchlistButton from "@/components/features/WatchlistButton";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
 import type { FairScoreTier } from "@/types/database";
@@ -143,6 +146,9 @@ export default function DeployerPage() {
   const wallet = params.wallet;
   const { data, loading, error, refetch } = useDeployerProfile(wallet);
   const { recordVisit } = useBrowsingHistory();
+  const { data: session } = useSession();
+  const { items: watchlistItems, addToken, removeToken, loading: watchlistLoading } = useWatchlist(session?.user?.wallet ?? null);
+  const isWatched = data ? watchlistItems.some((i) => i.mint === data.wallet) : false;
 
   useEffect(() => {
     if (data && !loading) {
@@ -208,6 +214,11 @@ export default function DeployerPage() {
                 {truncateAddress(data.wallet)}
               </span>
               <CopyButton text={data.wallet} />
+              <WatchlistButton
+                isWatched={isWatched}
+                onToggle={() => isWatched ? removeToken(data.wallet) : addToken(data.wallet)}
+                loading={watchlistLoading}
+              />
             </div>
             <p className="text-xs text-muted-foreground">
               via FairScale

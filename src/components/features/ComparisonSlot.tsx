@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { X, Trophy, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,64 @@ import TokenSearch from "@/components/features/TokenSearch";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
 import type { TrustAnalysis } from "@/services/tokenAnalyzer";
+
+// ---------------------------------------------------------------------------
+// Empty Slot with Drop Zone
+// ---------------------------------------------------------------------------
+
+function EmptySlot({ onSelect }: { onSelect: (mint: string) => void }) {
+  const [dragOver, setDragOver] = useState(false);
+
+  return (
+    <Card
+      className={cn(
+        "flex flex-col border-dashed transition-colors",
+        dragOver && "border-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20"
+      )}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+        setDragOver(true);
+      }}
+      onDragEnter={(e) => {
+        e.preventDefault();
+        setDragOver(true);
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragOver(false);
+        const mint = e.dataTransfer.getData("text/plain").trim();
+        if (mint && mint.length >= 32 && mint.length <= 44) {
+          onSelect(mint);
+        }
+      }}
+    >
+      <CardContent className="flex flex-1 flex-col items-center justify-center gap-4 p-6 py-16">
+        <p className={cn(
+          "text-sm text-muted-foreground transition-colors",
+          dragOver && "text-emerald-600 font-medium"
+        )}>
+          {dragOver ? "Drop token here" : "Add a token to compare"}
+        </p>
+        {!dragOver && (
+          <div className="w-full max-w-xs">
+            <TokenSearch onSelect={onSelect} placeholder="Search token..." />
+          </div>
+        )}
+        {dragOver && (
+          <div className="flex size-12 items-center justify-center rounded-full border-2 border-dashed border-emerald-400">
+            <span className="text-lg text-emerald-500">+</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
 
 interface ComparisonSlotProps {
   token: TrustAnalysis | null;
@@ -46,16 +105,7 @@ export default function ComparisonSlot({
 
   if (!token) {
     return (
-      <Card className="flex flex-col border-dashed">
-        <CardContent className="flex flex-1 flex-col items-center justify-center gap-4 p-6 py-16">
-          <p className="text-sm text-muted-foreground">
-            Add a token to compare
-          </p>
-          <div className="w-full max-w-xs">
-            <TokenSearch onSelect={onSelect} placeholder="Search token..." />
-          </div>
-        </CardContent>
-      </Card>
+      <EmptySlot onSelect={onSelect} />
     );
   }
 

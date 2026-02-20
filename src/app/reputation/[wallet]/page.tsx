@@ -20,6 +20,9 @@ import AISummaryCard from "@/components/features/AISummaryCard";
 import ScoreHistoryChart from "@/components/features/ScoreHistoryChart";
 import WalletAnalyticsChart from "@/components/features/WalletAnalyticsChart";
 import { useBrowsingHistory } from "@/hooks/useBrowsingHistory";
+import { useWatchlist } from "@/hooks/useWatchlist";
+import { useSession } from "next-auth/react";
+import WatchlistButton from "@/components/features/WatchlistButton";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
 import type { FairScoreData, FairScoreTier } from "@/types/database";
@@ -79,6 +82,9 @@ export default function ReputationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { recordVisit } = useBrowsingHistory();
+  const { data: session } = useSession();
+  const { items: watchlistItems, addToken, removeToken, loading: watchlistLoading } = useWatchlist(session?.user?.wallet ?? null);
+  const isWatched = watchlistItems.some((i) => i.mint === wallet);
 
   useEffect(() => {
     if (!wallet) return;
@@ -166,11 +172,16 @@ export default function ReputationPage() {
             </div>
           </div>
 
-          <div className="flex justify-center">
+          <div className="flex justify-center gap-2">
             <Button variant="outline" size="sm" onClick={handleShare}>
               <Share2 className="size-4" />
               Share your Trust Passport
             </Button>
+            <WatchlistButton
+              isWatched={isWatched}
+              onToggle={() => isWatched ? removeToken(wallet) : addToken(wallet)}
+              loading={watchlistLoading}
+            />
           </div>
 
           <Separator />
