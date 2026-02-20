@@ -1,65 +1,217 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import {
+  Search,
+  Shield,
+  TrendingUp,
+  Users,
+  AlertTriangle,
+  Zap,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import TokenSearch from "@/components/features/TokenSearch";
+
+// ---------------------------------------------------------------------------
+// How It Works steps
+// ---------------------------------------------------------------------------
+
+const steps = [
+  {
+    icon: Search,
+    title: "Search Any Token",
+    description:
+      "Enter a Solana token address or name to start your analysis.",
+  },
+  {
+    icon: Shield,
+    title: "Check Deployer Reputation",
+    description:
+      "We analyze the deployer's FairScore, wallet history, and on-chain behavior.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Make Informed Decisions",
+    description:
+      "Get a composite Trust Rating based on deployer rep, holder quality, and risk signals.",
+  },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Feature cards
+// ---------------------------------------------------------------------------
+
+const features = [
+  {
+    icon: Shield,
+    title: "Deployer Scoring",
+    description:
+      "Analyze any token deployer's on-chain reputation and FairScale score before you trade.",
+  },
+  {
+    icon: Users,
+    title: "Holder Analysis",
+    description:
+      "Detect sybil wallets, bot clusters, and evaluate overall holder quality.",
+  },
+  {
+    icon: AlertTriangle,
+    title: "Risk Detection",
+    description:
+      "Identify concentrated holdings, fresh wallets, and suspicious on-chain patterns.",
+  },
+  {
+    icon: Zap,
+    title: "Tier Benefits",
+    description:
+      "Higher FairScore unlocks premium features. Build your reputation and gain deeper insights.",
+  },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Landing Page
+// ---------------------------------------------------------------------------
+
+export default function HomePage() {
+  const { connected } = useWallet();
+  const { setVisible } = useWalletModal();
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="flex flex-col">
+      {/* ----------------------------------------------------------------- */}
+      {/* Hero Section                                                      */}
+      {/* ----------------------------------------------------------------- */}
+      <section className="relative overflow-hidden border-b bg-gradient-to-b from-emerald-50/50 to-background dark:from-emerald-950/20">
+        {/* Subtle decorative gradient circles */}
+        <div
+          className="pointer-events-none absolute -top-24 left-1/2 size-[600px] -translate-x-1/2 rounded-full bg-emerald-200/30 blur-3xl dark:bg-emerald-900/20"
+          aria-hidden="true"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-8 px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8 lg:py-36">
+          <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+            Know Before You Buy
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="max-w-2xl text-lg text-muted-foreground sm:text-xl">
+            Reputation-powered token intelligence for Solana. Check any
+            token&apos;s deployer trustworthiness before you trade.
           </p>
+
+          {/* Token Search */}
+          <div className="w-full max-w-xl">
+            <TokenSearch placeholder="Search tokens by name, symbol, or mint address..." />
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      {/* ----------------------------------------------------------------- */}
+      {/* How It Works                                                      */}
+      {/* ----------------------------------------------------------------- */}
+      <section className="border-b bg-background py-16 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <h2 className="text-center text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+            How It Works
+          </h2>
+          <p className="mx-auto mt-2 max-w-xl text-center text-muted-foreground">
+            Three simple steps to evaluate any Solana token.
+          </p>
+
+          <div className="mt-12 grid gap-8 sm:grid-cols-3">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              return (
+                <div
+                  key={step.title}
+                  className="flex flex-col items-center gap-4 text-center"
+                >
+                  {/* Step number + icon */}
+                  <div className="relative flex size-16 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/30">
+                    <Icon className="size-7 text-emerald-600" />
+                    <span className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full bg-emerald-600 text-xs font-bold text-white">
+                      {index + 1}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    {step.title}
+                  </h3>
+                  <p className="max-w-xs text-sm text-muted-foreground">
+                    {step.description}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </main>
+      </section>
+
+      {/* ----------------------------------------------------------------- */}
+      {/* Features Grid                                                     */}
+      {/* ----------------------------------------------------------------- */}
+      <section className="border-b bg-muted/30 py-16 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <h2 className="text-center text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+            Built for Smarter Trading
+          </h2>
+          <p className="mx-auto mt-2 max-w-xl text-center text-muted-foreground">
+            Everything you need to evaluate token trustworthiness on Solana.
+          </p>
+
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {features.map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <Card key={feature.title} className="transition-shadow hover:shadow-md">
+                  <CardHeader className="pb-2">
+                    <div className="mb-2 flex size-10 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
+                      <Icon className="size-5 text-emerald-600" />
+                    </div>
+                    <CardTitle className="text-base">{feature.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription>{feature.description}</CardDescription>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ----------------------------------------------------------------- */}
+      {/* CTA Section                                                       */}
+      {/* ----------------------------------------------------------------- */}
+      <section className="bg-background py-16 sm:py-20">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-6 px-4 text-center sm:px-6 lg:px-8">
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-950/30">
+            <Shield className="size-7 text-emerald-600" />
+          </div>
+          <h2 className="max-w-lg text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+            Unlock Premium Features
+          </h2>
+          <p className="max-w-md text-muted-foreground">
+            Connect your wallet to unlock premium features based on your own
+            FairScore. The higher your reputation, the more you can access.
+          </p>
+          {!connected && (
+            <Button
+              size="lg"
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
+              onClick={() => setVisible(true)}
+              aria-label="Connect wallet to get started"
+            >
+              Connect Wallet
+            </Button>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
