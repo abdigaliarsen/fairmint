@@ -28,6 +28,8 @@ import {
   getTokenLiquidity,
   type TokenLiquidity,
 } from "@/services/dexscreener";
+import { isJupiterVerified } from "@/services/jupiter";
+import { getRugCheckReport, type RugCheckResult } from "@/services/rugcheck";
 import {
   getFullScore,
   getQuickScore,
@@ -78,6 +80,19 @@ export interface TrustAnalysis {
   lpSupplyPercent: number;
   /** Identified LP vault positions. */
   lpVaults: LPVault[];
+
+  /** Whether the token is in Jupiter's verified list. */
+  jupiterVerified: boolean;
+  /** RugCheck risk assessment, if available. */
+  rugCheck: RugCheckResult | null;
+  /** Token creation timestamp (ISO), if detected. */
+  tokenCreatedAt: string | null;
+  /** Token age in days. */
+  tokenAgeDays: number | null;
+  /** Whether mint authority is still active. */
+  mintAuthorityActive: boolean;
+  /** Whether freeze authority is still active. */
+  freezeAuthorityActive: boolean;
 
   /** Timestamp of the analysis. */
   analyzedAt: string;
@@ -392,6 +407,12 @@ export async function analyzeToken(
         liquidity: null,
         lpSupplyPercent: 0,
         lpVaults: [],
+        jupiterVerified: false,
+        rugCheck: null,
+        tokenCreatedAt: null,
+        tokenAgeDays: null,
+        mintAuthorityActive: false,
+        freezeAuthorityActive: false,
         analyzedAt: cached.analyzed_at,
       };
     }
@@ -410,7 +431,7 @@ export async function analyzeToken(
   // 4. Fetch deployer score + DexScreener liquidity in parallel
   const deployerWallet = identifyDeployer(metadata);
 
-  const [deployerResult, dexData] = await Promise.all([
+  const [deployerResult, dexData, jupiterVerified, rugCheckResult] = await Promise.all([
     (async () => {
       if (!deployerWallet) return { score: null, tier: null, features: null };
       const fullScore = await getFullScore(deployerWallet);
@@ -422,6 +443,8 @@ export async function analyzeToken(
       };
     })(),
     getTokenLiquidity(mint),
+    isJupiterVerified(mint),
+    getRugCheckReport(mint),
   ]);
 
   let deployerScore: number | null = deployerResult.score;
@@ -470,6 +493,13 @@ export async function analyzeToken(
   const topHolderConcentration = holders[0]?.percentage ?? 0;
   const holderQualityScore = Math.round(holderQualityComponent);
   const analyzedAt = new Date().toISOString();
+
+  // Compute token age from metadata
+  const tokenCreatedAtRaw = (metadata.raw as unknown as Record<string, unknown>)?.created_at ?? null;
+  const tokenCreatedAt = tokenCreatedAtRaw ? new Date(tokenCreatedAtRaw as string).toISOString() : null;
+  const tokenAgeDays = tokenCreatedAt
+    ? Math.floor((Date.now() - new Date(tokenCreatedAt).getTime()) / (1000 * 60 * 60 * 24))
+    : null;
 
   // 8. Cache result in Supabase
   const analysisRow: TokenAnalysisInsert = {
@@ -531,6 +561,12 @@ export async function analyzeToken(
     liquidity: dexData,
     lpSupplyPercent: holderAnalysis.lpSupplyPercent,
     lpVaults: holderAnalysis.lpVaults,
+    jupiterVerified,
+    rugCheck: rugCheckResult,
+    tokenCreatedAt,
+    tokenAgeDays,
+    mintAuthorityActive: !!metadata.mintAuthority,
+    freezeAuthorityActive: !!metadata.freezeAuthority,
     analyzedAt,
   };
 }
