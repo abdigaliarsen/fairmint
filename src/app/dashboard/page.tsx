@@ -18,8 +18,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import FairScoreDisplay from "@/components/features/FairScoreDisplay";
 import TokenCard from "@/components/features/TokenCard";
 import TokenSearch from "@/components/features/TokenSearch";
+import ScoreRecommendations from "@/components/features/ScoreRecommendations";
 import { useFairScore } from "@/hooks/useFairScore";
 import { useWatchlist } from "@/hooks/useWatchlist";
+import { generateRecommendations } from "@/lib/recommendations";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
 import type { FairScoreTier } from "@/types/database";
@@ -137,6 +139,7 @@ export default function DashboardPage() {
   const currentTier: FairScoreTier = fairScore?.tier ?? "unrated";
   const tierColors = getTierColor(currentTier);
   const benefits = tierBenefits[currentTier];
+  const recommendations = generateRecommendations(fairScore, undefined, currentTier);
 
   if (!connected) {
     return <ConnectWalletPrompt onConnect={() => setVisible(true)} />;
@@ -190,6 +193,13 @@ export default function DashboardPage() {
           </div>
 
           <Separator />
+
+          {/* --------------------------------------------------------------- */}
+          {/* Score Improvement Recommendations                               */}
+          {/* --------------------------------------------------------------- */}
+          {recommendations.length > 0 && (
+            <ScoreRecommendations recommendations={recommendations} />
+          )}
 
           {/* --------------------------------------------------------------- */}
           {/* Tabs: Overview / Watchlist                                       */}
