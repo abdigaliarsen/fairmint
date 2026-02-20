@@ -214,46 +214,34 @@ export default function ReputationPage() {
             </Card>
           )}
 
-          {/* Score Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Score Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-muted-foreground">
-                  Decimal Score
-                </span>
+          {/* Score Summary */}
+          <div className="grid grid-cols-3 gap-3">
+            <Card>
+              <CardContent className="flex flex-col gap-0.5 py-3">
+                <span className="text-xs text-muted-foreground">FairScore</span>
                 <span className="text-lg font-semibold">
                   {data.fairScore?.decimalScore?.toFixed(1) ?? "N/A"}
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">/ 100</span>
                 </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-muted-foreground">
-                  Integer Score
-                </span>
-                <span className="text-lg font-semibold">
-                  {data.fairScore?.integerScore ?? "N/A"}
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-muted-foreground">
-                  Wallet Score
-                </span>
-                <span className="text-lg font-semibold">
-                  {data.walletScore ?? "N/A"}
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-muted-foreground">
-                  Badge Count
-                </span>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="flex flex-col gap-0.5 py-3">
+                <span className="text-xs text-muted-foreground">Badges</span>
                 <span className="text-lg font-semibold">
                   {data.fairScore?.badges?.length ?? 0}
                 </span>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="flex flex-col gap-0.5 py-3">
+                <span className="text-xs text-muted-foreground">Wallet Score</span>
+                <span className="text-lg font-semibold">
+                  {data.walletScore ?? "N/A"}
+                </span>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Recommendations */}
           <ScoreRecommendations recommendations={data.recommendations} />
