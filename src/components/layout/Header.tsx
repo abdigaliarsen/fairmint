@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { Shield, Search, LayoutDashboard, LogOut, Scale, Sun, Moon } from "lucide-react";
+import { Shield, Search, LayoutDashboard, LogOut, Scale, Sun, Moon, Clock } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -59,6 +59,12 @@ export default function Header() {
               Compare
             </Link>
           </Button>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/history">
+              <Clock className="size-4" />
+              History
+            </Link>
+          </Button>
           {connected && (
             <Button variant="ghost" size="sm" asChild>
               <Link href="/dashboard">
@@ -91,6 +97,11 @@ export default function Header() {
             <Button variant="ghost" size="icon" asChild>
               <Link href="/compare" aria-label="Compare">
                 <Scale className="size-4" />
+              </Link>
+            </Button>
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/history" aria-label="History">
+                <Clock className="size-4" />
               </Link>
             </Button>
             {connected && (
