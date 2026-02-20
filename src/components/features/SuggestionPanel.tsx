@@ -361,28 +361,30 @@ export default function SuggestionPanel({ comparisonMode }: SuggestionPanelProps
         </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        {/* Tab buttons */}
-        <div className="flex gap-1">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.value}
-                type="button"
-                onClick={() => setActiveTab(tab.value)}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                  activeTab === tab.value
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                )}
-              >
-                <Icon className="size-3.5" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+        {/* Tab buttons — only shown when NOT driven by comparison mode */}
+        {!comparisonMode && (
+          <div className="flex gap-1">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => setActiveTab(tab.value)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                    activeTab === tab.value
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  )}
+                >
+                  <Icon className="size-3.5" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Tab content */}
         <div className="max-h-72 overflow-y-auto" role="listbox">

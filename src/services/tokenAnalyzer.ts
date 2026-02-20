@@ -351,7 +351,9 @@ function detectRiskFlags(
           "high",
           "RugCheck: Danger",
           riskDetails ||
-            `RugCheck flagged this token as dangerous with ${rugCheckResult.riskCount} risk(s) detected.`
+            (rugCheckResult.riskCount > 0
+              ? `RugCheck flagged this token as dangerous with ${rugCheckResult.riskCount} risk(s) detected.`
+              : `RugCheck flagged this token as dangerous (risk score: ${rugCheckResult.score}).`)
         )
       );
     } else if (rugCheckResult.riskCount >= 3) {

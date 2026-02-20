@@ -41,9 +41,15 @@ function getSeverityStyles(severity: RiskFlag["severity"]): {
   }
 }
 
+/** Description is considered expandable only when it's long enough to be truncated by line-clamp-1. */
+const EXPAND_THRESHOLD = 80;
+
 function RiskFlagItem({ flag }: { flag: RiskFlag }) {
   const [expanded, setExpanded] = useState(false);
   const styles = getSeverityStyles(flag.severity);
+
+  const hasExpandableDescription =
+    !!flag.description && flag.description.length > EXPAND_THRESHOLD;
 
   return (
     <li
@@ -53,11 +59,21 @@ function RiskFlagItem({ flag }: { flag: RiskFlag }) {
         styles.border
       )}
     >
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="flex items-start gap-3 p-3 text-left"
-        aria-expanded={expanded}
+      <div
+        role={hasExpandableDescription ? "button" : undefined}
+        tabIndex={hasExpandableDescription ? 0 : undefined}
+        onClick={() => hasExpandableDescription && setExpanded(!expanded)}
+        onKeyDown={(e) => {
+          if (hasExpandableDescription && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            setExpanded(!expanded);
+          }
+        }}
+        className={cn(
+          "flex items-start gap-3 p-3 text-left",
+          hasExpandableDescription && "cursor-pointer"
+        )}
+        aria-expanded={hasExpandableDescription ? expanded : undefined}
       >
         <AlertTriangle
           className={cn("mt-0.5 size-4 shrink-0", styles.icon)}
@@ -78,21 +94,26 @@ function RiskFlagItem({ flag }: { flag: RiskFlag }) {
               {flag.severity}
             </span>
           </div>
-          {!expanded && flag.description && (
-            <p className="line-clamp-1 text-xs text-muted-foreground">
+          {flag.description && !(expanded && hasExpandableDescription) && (
+            <p className={cn(
+              "text-xs text-muted-foreground",
+              hasExpandableDescription && "line-clamp-1"
+            )}>
               {flag.description}
             </p>
           )}
         </div>
-        <span className="mt-0.5 shrink-0">
-          {expanded ? (
-            <ChevronUp className="size-4 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="size-4 text-muted-foreground" />
-          )}
-        </span>
-      </button>
-      {expanded && flag.description && (
+        {hasExpandableDescription && (
+          <span className="mt-0.5 shrink-0">
+            {expanded ? (
+              <ChevronUp className="size-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="size-4 text-muted-foreground" />
+            )}
+          </span>
+        )}
+      </div>
+      {expanded && hasExpandableDescription && (
         <div className="border-t border-inherit px-3 pb-3 pt-2">
           <p className="text-xs leading-relaxed text-muted-foreground">
             {flag.description}

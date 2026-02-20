@@ -95,6 +95,8 @@ function EmptySlot({
 // Expandable Risk Flag for Comparison
 // ---------------------------------------------------------------------------
 
+const EXPAND_THRESHOLD = 60;
+
 function ComparisonRiskFlag({ flag }: { flag: RiskFlag }) {
   const [expanded, setExpanded] = useState(false);
   const iconColor =
@@ -104,28 +106,48 @@ function ComparisonRiskFlag({ flag }: { flag: RiskFlag }) {
         ? "text-yellow-500"
         : "text-gray-400";
 
+  const hasExpandable =
+    !!flag.description && flag.description.length > EXPAND_THRESHOLD;
+
   return (
     <li className="flex flex-col">
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="flex items-start gap-2 text-left"
+      <div
+        role={hasExpandable ? "button" : undefined}
+        tabIndex={hasExpandable ? 0 : undefined}
+        onClick={() => hasExpandable && setExpanded(!expanded)}
+        onKeyDown={(e) => {
+          if (hasExpandable && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            setExpanded(!expanded);
+          }
+        }}
+        className={cn(
+          "flex items-start gap-2 text-left",
+          hasExpandable && "cursor-pointer"
+        )}
       >
         <AlertTriangle
           className={cn("mt-0.5 size-4 shrink-0", iconColor)}
         />
-        <span className="flex-1 text-sm text-muted-foreground">
-          {flag.label}
-        </span>
-        {flag.description && (
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span className="text-sm text-muted-foreground">
+            {flag.label}
+          </span>
+          {flag.description && !hasExpandable && (
+            <span className="text-xs text-muted-foreground/70">
+              {flag.description}
+            </span>
+          )}
+        </div>
+        {hasExpandable && (
           expanded ? (
             <ChevronUp className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/50" />
           ) : (
             <ChevronDown className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/50" />
           )
         )}
-      </button>
-      {expanded && flag.description && (
+      </div>
+      {expanded && hasExpandable && (
         <p className="ml-6 mt-1 text-xs leading-relaxed text-muted-foreground">
           {flag.description}
         </p>

@@ -135,17 +135,24 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // For "token" entries that weren't found in token_analyses, check
+    // cached_scores — they may be wallets/deployers stored before the
+    // entity_type column existed.
+    const unmatchedTokenMints = tokenMints.filter((m) => !tokenData[m]);
+
     // Enrich wallet/deployer items from cached_scores
+    // Include unmatched "token" entries so we can reclassify them
+    const allWalletLookups = [...walletAddresses, ...unmatchedTokenMints];
     let walletData: Record<
       string,
       { score: number; tier: FairScoreTier }
     > = {};
 
-    if (walletAddresses.length > 0) {
+    if (allWalletLookups.length > 0) {
       const { data: scores } = await supabase
         .from("cached_scores")
         .select("wallet, score_decimal, tier")
-        .in("wallet", walletAddresses);
+        .in("wallet", allWalletLookups);
 
       if (scores) {
         walletData = Object.fromEntries(
@@ -159,7 +166,17 @@ export async function GET(request: NextRequest) {
 
     // Map to the shape the frontend expects
     const enrichedItems = items.map((item) => {
-      const entityType = item.entity_type || "token";
+      let entityType = item.entity_type || "token";
+
+      // Reclassify: if entity_type is "token" but no token data was found
+      // AND the address exists in cached_scores, treat it as a wallet
+      if (
+        entityType === "token" &&
+        !tokenData[item.token_mint] &&
+        walletData[item.token_mint]
+      ) {
+        entityType = "wallet";
+      }
 
       return {
         id: String(item.id),
