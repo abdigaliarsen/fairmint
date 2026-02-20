@@ -28,6 +28,7 @@ import ScoreRecommendations from "@/components/features/ScoreRecommendations";
 import AISummaryCard from "@/components/features/AISummaryCard";
 import ScoreHistoryChart from "@/components/features/ScoreHistoryChart";
 import WalletAnalyticsChart from "@/components/features/WalletAnalyticsChart";
+import DeployerTimeline from "@/components/features/DeployerTimeline";
 import { useDeployerProfile } from "@/hooks/useDeployerProfile";
 import { useBrowsingHistory } from "@/hooks/useBrowsingHistory";
 import { cn } from "@/lib/utils";
@@ -378,6 +379,13 @@ export default function DeployerPage() {
                 />
               </CardContent>
             </Card>
+          )}
+
+          {/* --------------------------------------------------------------- */}
+          {/* Deployer Timeline                                               */}
+          {/* --------------------------------------------------------------- */}
+          {data.deployedTokens.length > 0 && (
+            <DeployerTimeline tokens={data.deployedTokens} />
           )}
 
           {/* --------------------------------------------------------------- */}
