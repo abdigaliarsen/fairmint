@@ -1,7 +1,6 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/database";
 
-let clientInstance: SupabaseClient<Database> | null = null;
+let clientInstance: SupabaseClient | null = null;
 
 /**
  * Get a singleton client-side Supabase client using the anon (public) key.
@@ -10,7 +9,7 @@ let clientInstance: SupabaseClient<Database> | null = null;
  * browser / client components. The singleton pattern prevents creating
  * multiple GoTrue client instances.
  */
-export function getSupabaseClient(): SupabaseClient<Database> {
+export function getSupabaseClient(): SupabaseClient {
   if (clientInstance) {
     return clientInstance;
   }
@@ -26,7 +25,7 @@ export function getSupabaseClient(): SupabaseClient<Database> {
     throw new Error("Missing environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY");
   }
 
-  clientInstance = createClient<Database>(supabaseUrl, supabaseAnonKey);
+  clientInstance = createClient(supabaseUrl, supabaseAnonKey);
 
   return clientInstance;
 }

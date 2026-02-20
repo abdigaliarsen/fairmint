@@ -138,22 +138,32 @@ export interface Database {
         Row: CachedScore;
         Insert: CachedScoreInsert;
         Update: Partial<CachedScoreInsert>;
+        Relationships: [];
       };
       token_analyses: {
         Row: TokenAnalysis;
         Insert: TokenAnalysisInsert;
         Update: Partial<TokenAnalysisInsert>;
+        Relationships: [];
       };
       users: {
         Row: User;
         Insert: UserInsert;
         Update: Partial<UserInsert>;
+        Relationships: [];
       };
       watchlist: {
         Row: WatchlistItem;
         Insert: WatchlistItemInsert;
         Update: Partial<WatchlistItemInsert>;
+        Relationships: [];
       };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
     };
   };
 }
