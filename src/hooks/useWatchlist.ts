@@ -17,8 +17,6 @@ export interface WatchlistTokenInfo {
 export interface WatchlistEntry {
   id: string;
   mint: string;
-  label: string | null;
-  notes: string | null;
   added_at: string;
   token: WatchlistTokenInfo | null;
 }

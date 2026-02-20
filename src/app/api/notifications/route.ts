@@ -45,12 +45,12 @@ export async function GET(request: NextRequest) {
     // Check watchlist for changes (generate new alerts)
     const { data: watchlistItems } = await supabase
       .from("watchlist")
-      .select("mint")
-      .eq("user_id", wallet);
+      .select("token_mint")
+      .eq("user_wallet", wallet);
 
     if (watchlistItems && watchlistItems.length > 0) {
       // Get current cached analyses
-      const mints = watchlistItems.map((w) => w.mint);
+      const mints = watchlistItems.map((w) => w.token_mint);
       const { data: cachedAnalyses } = await supabase
         .from("token_analyses")
         .select("mint, name, trust_rating, risk_flags, analyzed_at")

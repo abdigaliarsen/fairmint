@@ -5,6 +5,12 @@
  * POST   — Add a token mint to a wallet's watchlist.
  * DELETE — Remove a token mint from a wallet's watchlist.
  *
+ * DB schema (watchlist table):
+ *   id          integer (auto-increment PK)
+ *   user_wallet varchar
+ *   token_mint  varchar
+ *   added_at    timestamptz (default now())
+ *
  * All operations use the Supabase service client (server-side only).
  */
 
@@ -16,25 +22,14 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 // Validation schemas
 // ---------------------------------------------------------------------------
 
-const getSchema = z.object({
+const walletSchema = z.object({
   wallet: z
     .string()
     .min(32, "Invalid wallet address")
     .max(44, "Invalid wallet address"),
 });
 
-const postSchema = z.object({
-  wallet: z
-    .string()
-    .min(32, "Invalid wallet address")
-    .max(44, "Invalid wallet address"),
-  tokenMint: z
-    .string()
-    .min(32, "Invalid token mint address")
-    .max(44, "Invalid token mint address"),
-});
-
-const deleteSchema = z.object({
+const walletTokenSchema = z.object({
   wallet: z
     .string()
     .min(32, "Invalid wallet address")
@@ -52,7 +47,7 @@ const deleteSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
-    const parsed = getSchema.safeParse({
+    const parsed = walletSchema.safeParse({
       wallet: searchParams.get("wallet"),
     });
 
@@ -66,23 +61,11 @@ export async function GET(request: NextRequest) {
     const { wallet } = parsed.data;
     const supabase = createServerSupabaseClient();
 
-    // First, find the user by wallet
-    const { data: user } = await supabase
-      .from("users")
-      .select("id")
-      .eq("wallet", wallet)
-      .maybeSingle();
-
-    if (!user) {
-      // No user record yet — return empty watchlist
-      return NextResponse.json({ items: [] });
-    }
-
-    // Fetch watchlist items joined with token analysis data
+    // Fetch watchlist items for this wallet
     const { data: watchlistItems, error } = await supabase
       .from("watchlist")
-      .select("id, mint, label, notes, added_at")
-      .eq("user_id", user.id)
+      .select("id, user_wallet, token_mint, added_at")
+      .eq("user_wallet", wallet)
       .order("added_at", { ascending: false });
 
     if (error) {
@@ -94,7 +77,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Enrich watchlist items with token analysis data
-    const mints = (watchlistItems ?? []).map((item) => item.mint);
+    const mints = (watchlistItems ?? []).map((item) => item.token_mint);
     let tokenData: Record<
       string,
       {
@@ -126,9 +109,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Map to the shape the frontend expects
     const enrichedItems = (watchlistItems ?? []).map((item) => ({
-      ...item,
-      token: tokenData[item.mint] ?? null,
+      id: String(item.id),
+      mint: item.token_mint,
+      added_at: item.added_at,
+      token: tokenData[item.token_mint] ?? null,
     }));
 
     return NextResponse.json({ items: enrichedItems });
@@ -148,7 +134,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const parsed = postSchema.safeParse(body);
+    const parsed = walletTokenSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -160,36 +146,12 @@ export async function POST(request: NextRequest) {
     const { wallet, tokenMint } = parsed.data;
     const supabase = createServerSupabaseClient();
 
-    // Find or create user
-    let { data: user } = await supabase
-      .from("users")
-      .select("id")
-      .eq("wallet", wallet)
-      .maybeSingle();
-
-    if (!user) {
-      const { data: newUser, error: userError } = await supabase
-        .from("users")
-        .insert({ wallet, display_name: null, avatar_url: null, fair_score: null, fair_tier: null, last_login: null })
-        .select("id")
-        .single();
-
-      if (userError) {
-        console.error("User creation error:", userError);
-        return NextResponse.json(
-          { error: "Failed to create user" },
-          { status: 500 }
-        );
-      }
-      user = newUser;
-    }
-
     // Check for duplicate
     const { data: existing } = await supabase
       .from("watchlist")
       .select("id")
-      .eq("user_id", user.id)
-      .eq("mint", tokenMint)
+      .eq("user_wallet", wallet)
+      .eq("token_mint", tokenMint)
       .maybeSingle();
 
     if (existing) {
@@ -203,13 +165,10 @@ export async function POST(request: NextRequest) {
     const { data: item, error: insertError } = await supabase
       .from("watchlist")
       .insert({
-        user_id: user.id,
-        mint: tokenMint,
-        label: null,
-        notes: null,
-        added_at: new Date().toISOString(),
+        user_wallet: wallet,
+        token_mint: tokenMint,
       })
-      .select("id, mint, label, notes, added_at")
+      .select("id, token_mint, added_at")
       .single();
 
     if (insertError) {
@@ -220,7 +179,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ item }, { status: 201 });
+    return NextResponse.json(
+      {
+        item: {
+          id: String(item.id),
+          mint: item.token_mint,
+          added_at: item.added_at,
+          token: null,
+        },
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("POST /api/watchlist error:", error);
     return NextResponse.json(
@@ -237,7 +206,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const body = await request.json();
-    const parsed = deleteSchema.safeParse(body);
+    const parsed = walletTokenSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -249,26 +218,11 @@ export async function DELETE(request: NextRequest) {
     const { wallet, tokenMint } = parsed.data;
     const supabase = createServerSupabaseClient();
 
-    // Find user
-    const { data: user } = await supabase
-      .from("users")
-      .select("id")
-      .eq("wallet", wallet)
-      .maybeSingle();
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
-    }
-
-    // Delete watchlist item
     const { error: deleteError } = await supabase
       .from("watchlist")
       .delete()
-      .eq("user_id", user.id)
-      .eq("mint", tokenMint);
+      .eq("user_wallet", wallet)
+      .eq("token_mint", tokenMint);
 
     if (deleteError) {
       console.error("Watchlist delete error:", deleteError);
