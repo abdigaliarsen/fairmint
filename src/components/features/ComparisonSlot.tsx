@@ -82,17 +82,17 @@ export default function ComparisonSlot({
       >
         <X className="size-4" />
       </Button>
-      <CardHeader className="pb-2 pt-6">
-        <CardTitle className="truncate text-base">
+      <CardHeader className="pb-3 pt-6">
+        <CardTitle className="truncate text-lg">
           {token.name ?? "Unknown"}
           {token.symbol && (
-            <span className="ml-1 text-sm font-normal text-muted-foreground">
+            <span className="ml-1.5 text-base font-normal text-muted-foreground">
               ${token.symbol}
             </span>
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="flex flex-col gap-5">
         {/* Trust Rating */}
         <TrustRating rating={token.trustRating} />
 
@@ -100,10 +100,10 @@ export default function ComparisonSlot({
 
         {/* Deployer - always shown */}
         <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Deployer</span>
+          <span className="text-sm text-muted-foreground">Deployer</span>
           <Badge
             className={cn(
-              "border capitalize",
+              "border text-sm capitalize",
               tierColors.bg,
               tierColors.text,
               tierColors.border
@@ -122,14 +122,14 @@ export default function ComparisonSlot({
         <Separator />
 
         {/* Risk Flags - expanded with details */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
+            <span className="text-sm font-medium text-muted-foreground">
               Risk Flags
             </span>
             <Badge
               className={cn(
-                "border",
+                "border text-sm",
                 token.riskFlags.length === 0
                   ? "bg-emerald-50 text-emerald-600 border-emerald-300"
                   : "bg-red-50 text-red-600 border-red-300"
@@ -139,14 +139,14 @@ export default function ComparisonSlot({
             </Badge>
           </div>
           {token.riskFlags.length === 0 ? (
-            <p className="text-xs text-emerald-600">No risk flags detected</p>
+            <p className="text-sm text-emerald-600">No risk flags detected</p>
           ) : (
-            <ul className="flex flex-col gap-1.5">
+            <ul className="flex flex-col gap-2">
               {token.riskFlags.map((flag) => (
-                <li key={flag.id} className="flex items-start gap-1.5">
+                <li key={flag.id} className="flex items-start gap-2">
                   <AlertTriangle
                     className={cn(
-                      "mt-0.5 size-3 shrink-0",
+                      "mt-0.5 size-4 shrink-0",
                       flag.severity === "critical" || flag.severity === "high"
                         ? "text-red-500"
                         : flag.severity === "medium"
@@ -154,7 +154,7 @@ export default function ComparisonSlot({
                           : "text-gray-400"
                     )}
                   />
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-sm text-muted-foreground">
                     {flag.label}
                   </span>
                 </li>
