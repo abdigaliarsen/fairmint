@@ -181,6 +181,20 @@ export default function HolderGraph({
             >
               {node.percentage.toFixed(0)}%
             </text>
+            {/* Smart money indicator */}
+            {(node.tier === "gold" || node.tier === "platinum") && (
+              <text
+                x={node.cx + node.r * 0.6}
+                y={node.cy - node.r * 0.6}
+                fontSize="10"
+                fill="#eab308"
+                textAnchor="middle"
+                dominantBaseline="central"
+                style={{ pointerEvents: "none" }}
+              >
+                ★
+              </text>
+            )}
           </g>
         ))}
 
@@ -258,6 +272,19 @@ export default function HolderGraph({
           );
         })}
       </div>
+
+      {/* Smart money summary */}
+      {(() => {
+        const smartCount = holders.filter(
+          (h) => h.tier === "gold" || h.tier === "platinum"
+        ).length;
+        if (smartCount === 0) return null;
+        return (
+          <p className="text-center text-xs text-muted-foreground">
+            {smartCount} of {holders.length} top holders have high reputation
+          </p>
+        );
+      })()}
     </div>
   );
 }
