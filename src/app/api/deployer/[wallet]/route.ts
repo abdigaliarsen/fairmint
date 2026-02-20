@@ -68,6 +68,7 @@ export async function GET(
             tier: scoreData.tier,
             badges: scoreData.badges,
             actions: scoreData.actions,
+            features: scoreData.features ?? null,
             updatedAt: scoreData.updatedAt,
           }
         : null,

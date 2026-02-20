@@ -27,6 +27,7 @@ import TokenGraph from "@/components/features/TokenGraph";
 import ScoreRecommendations from "@/components/features/ScoreRecommendations";
 import AISummaryCard from "@/components/features/AISummaryCard";
 import ScoreHistoryChart from "@/components/features/ScoreHistoryChart";
+import WalletAnalyticsChart from "@/components/features/WalletAnalyticsChart";
 import { useDeployerProfile } from "@/hooks/useDeployerProfile";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
@@ -237,6 +238,11 @@ export default function DeployerPage() {
               />
             </div>
           </section>
+
+          {/* --------------------------------------------------------------- */}
+          {/* Wallet Analytics Radar                                          */}
+          {/* --------------------------------------------------------------- */}
+          <WalletAnalyticsChart features={data.fairScore?.features} />
 
           {/* --------------------------------------------------------------- */}
           {/* Score History                                                   */}

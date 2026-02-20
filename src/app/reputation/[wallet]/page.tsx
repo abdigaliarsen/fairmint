@@ -18,6 +18,7 @@ import FairScoreDisplay from "@/components/features/FairScoreDisplay";
 import ScoreRecommendations from "@/components/features/ScoreRecommendations";
 import AISummaryCard from "@/components/features/AISummaryCard";
 import ScoreHistoryChart from "@/components/features/ScoreHistoryChart";
+import WalletAnalyticsChart from "@/components/features/WalletAnalyticsChart";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
 import type { FairScoreData, FairScoreTier } from "@/types/database";
@@ -171,6 +172,9 @@ export default function ReputationPage() {
               badgeLabels: data.fairScore?.badges?.map((b: { label: string }) => b.label).join(", "),
             } : null}
           />
+
+          {/* Wallet Analytics Radar */}
+          <WalletAnalyticsChart features={data.fairScore?.features} />
 
           {/* Score History */}
           <ScoreHistoryChart

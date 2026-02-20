@@ -29,6 +29,7 @@ import HolderGraph from "@/components/features/HolderGraph";
 import ScoreRecommendations from "@/components/features/ScoreRecommendations";
 import AISummaryCard from "@/components/features/AISummaryCard";
 import ScoreHistoryChart from "@/components/features/ScoreHistoryChart";
+import LiquidityCard from "@/components/features/LiquidityCard";
 import { useTokenAnalysis } from "@/hooks/useTokenAnalysis";
 import { useHolders } from "@/hooks/useHolders";
 import { generateTokenTips } from "@/lib/recommendations";
@@ -251,6 +252,11 @@ export default function TokenPage() {
             label="Trust Rating"
             color="#059669"
           />
+
+          {/* --------------------------------------------------------------- */}
+          {/* Liquidity                                                       */}
+          {/* --------------------------------------------------------------- */}
+          <LiquidityCard mint={data.mint} />
 
           {/* --------------------------------------------------------------- */}
           {/* Deployer Info                                                   */}
