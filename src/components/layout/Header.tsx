@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { Shield, Search, LayoutDashboard, LogOut, Scale, Sun, Moon, Clock } from "lucide-react";
+import { Shield, Search, LayoutDashboard, LogOut, Scale, Sun, Moon, Clock, Compass, Crown } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -60,6 +60,18 @@ export default function Header() {
             </Link>
           </Button>
           <Button variant="ghost" size="sm" asChild>
+            <Link href="/discover">
+              <Compass className="size-4" />
+              Discover
+            </Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/wallets">
+              <Crown className="size-4" />
+              Wallets
+            </Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild>
             <Link href="/history">
               <Clock className="size-4" />
               History
@@ -97,6 +109,16 @@ export default function Header() {
             <Button variant="ghost" size="icon" asChild>
               <Link href="/compare" aria-label="Compare">
                 <Scale className="size-4" />
+              </Link>
+            </Button>
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/discover" aria-label="Discover">
+                <Compass className="size-4" />
+              </Link>
+            </Button>
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/wallets" aria-label="Wallets">
+                <Crown className="size-4" />
               </Link>
             </Button>
             <Button variant="ghost" size="icon" asChild>

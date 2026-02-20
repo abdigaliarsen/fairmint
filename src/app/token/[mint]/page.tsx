@@ -13,6 +13,7 @@ import {
   BadgeCheck,
   Clock,
   ShieldCheck,
+  Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +42,8 @@ import { useHolders } from "@/hooks/useHolders";
 import { generateTokenTips } from "@/lib/recommendations";
 import { useBrowsingHistory } from "@/hooks/useBrowsingHistory";
 import { cn } from "@/lib/utils";
+import { getTierColor } from "@/services/fairscale";
+import type { FairScoreTier } from "@/types/database";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -353,6 +356,70 @@ export default function TokenPage() {
               </p>
             </CardContent>
           </Card>
+
+          {/* --------------------------------------------------------------- */}
+          {/* Notable Holders (Gold / Platinum)                               */}
+          {/* --------------------------------------------------------------- */}
+          {(() => {
+            const notable = holders.filter(
+              (h) => h.tier === "gold" || h.tier === "platinum"
+            );
+            if (notable.length === 0) return null;
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Crown className="size-4 text-yellow-500" />
+                    Notable Holders
+                  </CardTitle>
+                  <CardDescription>
+                    Top holders with Gold or Platinum FairScale reputation.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="divide-y">
+                    {notable.map((holder) => {
+                      const tierColors = getTierColor(holder.tier as FairScoreTier);
+                      return (
+                        <Link
+                          key={holder.owner}
+                          href={`/reputation/${holder.owner}`}
+                          className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 sm:px-6"
+                        >
+                          <div
+                            className={cn(
+                              "flex size-9 shrink-0 items-center justify-center rounded-full border text-xs font-bold",
+                              tierColors.bg,
+                              tierColors.border,
+                              tierColors.text
+                            )}
+                          >
+                            {holder.fairScore !== null
+                              ? Math.min(100, Math.round((holder.fairScore / 1000) * 100))
+                              : "–"}
+                          </div>
+                          <div className="flex min-w-0 flex-1 flex-col">
+                            <span className="truncate font-mono text-sm font-medium text-foreground">
+                              {truncateAddress(holder.owner)}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              Holds {holder.percentage.toFixed(1)}%
+                            </span>
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className={cn("text-xs capitalize", tierColors.text)}
+                          >
+                            {holder.tier}
+                          </Badge>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           {/* --------------------------------------------------------------- */}
           {/* Holder Network Graph                                            */}

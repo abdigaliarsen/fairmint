@@ -11,6 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeToken } from "@/services/tokenAnalyzer";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 /** Well-known Solana token mints to keep fresh. */
 const POPULAR_MINTS = [
@@ -29,6 +30,26 @@ const POPULAR_MINTS = [
   "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm", // WIF
 ];
 
+/**
+ * Fetch recently-analyzed tokens that are stale (older than 1 hour)
+ * so the discover feed stays fresh.
+ */
+async function getStaleMints(limit: number): Promise<string[]> {
+  try {
+    const supabase = createServerSupabaseClient();
+    const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { data } = await supabase
+      .from("token_analyses")
+      .select("mint")
+      .lt("analyzed_at", cutoff)
+      .order("analyzed_at", { ascending: false })
+      .limit(limit);
+    return (data ?? []).map((r) => r.mint);
+  } catch {
+    return [];
+  }
+}
+
 export async function GET(request: NextRequest) {
   // Verify the request is from Vercel Cron
   const authHeader = request.headers.get("authorization");
@@ -38,9 +59,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Merge popular mints with stale recently-analyzed tokens (deduplicated)
+  const staleMints = await getStaleMints(10);
+  const allMints = [...new Set([...POPULAR_MINTS, ...staleMints])];
+
   const results: Array<{ mint: string; name: string | null; trustRating: number | null; error?: string }> = [];
 
-  for (const mint of POPULAR_MINTS) {
+  for (const mint of allMints) {
     try {
       const analysis = await analyzeToken(mint);
       results.push({
@@ -64,6 +89,9 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     refreshed: succeeded,
     failed,
+    total: allMints.length,
+    popular: POPULAR_MINTS.length,
+    stale: staleMints.length,
     results,
     timestamp: new Date().toISOString(),
   });
