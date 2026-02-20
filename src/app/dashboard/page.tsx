@@ -34,7 +34,8 @@ const tierBenefits: Record<
 > = {
   unrated: {
     label: "Unrated",
-    description: "Connect your wallet and build reputation to unlock features.",
+    description:
+      "Your wallet has no FairScale reputation yet. Use Solana DeFi, trade, and interact on-chain to build your score.",
   },
   bronze: {
     label: "Bronze",
@@ -178,28 +179,13 @@ export default function DashboardPage() {
                 </CardTitle>
                 <CardDescription>{benefits.description}</CardDescription>
               </CardHeader>
-              {fairScore && (
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-xs text-muted-foreground">
-                        Score
-                      </span>
-                      <span className="text-lg font-semibold text-foreground">
-                        {(fairScore.score ?? 0).toFixed(1)}
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-xs text-muted-foreground">
-                        Tier
-                      </span>
-                      <span className="text-lg font-semibold capitalize text-foreground">
-                        {fairScore.tier}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              )}
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  {currentTier === "unrated"
+                    ? "Interact on-chain to start building your FairScale reputation."
+                    : `Your wallet reputation qualifies for ${benefits.label} tier features.`}
+                </p>
+              </CardContent>
             </Card>
           </div>
 
