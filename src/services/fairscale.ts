@@ -62,9 +62,9 @@ const TIER_COLOR_MAP: Record<FairScoreTier, TierColors> = {
     border: "border-gray-300",
   },
   bronze: {
-    text: "text-amber-600",
-    bg: "bg-amber-100",
-    border: "border-amber-300",
+    text: "text-amber-700",
+    bg: "bg-amber-50",
+    border: "border-amber-200",
   },
   silver: {
     text: "text-slate-500",

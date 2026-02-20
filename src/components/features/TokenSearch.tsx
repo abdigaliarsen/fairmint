@@ -125,7 +125,7 @@ export default function TokenSearch({
           onFocus={() => {
             if (results.length > 0) setIsOpen(true);
           }}
-          className="pl-9 pr-9"
+          className="pl-9 pr-9 focus-visible:ring-0 focus-visible:border-input"
           aria-label="Search tokens"
           aria-expanded={isOpen}
           role="combobox"

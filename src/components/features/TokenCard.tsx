@@ -51,7 +51,7 @@ export default function TokenCard({
 
   return (
     <Link href={`/token/${mint}`} className="block" aria-label={`View ${name ?? symbol ?? mint} token details`}>
-      <Card className="transition-shadow hover:shadow-md">
+      <Card className="transition-all hover:shadow-md hover:bg-accent/50 hover:-translate-y-0.5">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2 overflow-hidden">
             <CardTitle className="min-w-0 text-base">
