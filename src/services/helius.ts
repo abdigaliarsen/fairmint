@@ -49,6 +49,35 @@ export interface TokenHolder {
   percentage: number;
 }
 
+/** Known Solana DEX program IDs for LP vault detection. */
+const DEX_PROGRAMS: Record<string, string> = {
+  "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8": "Raydium AMM",
+  "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK": "Raydium CLMM",
+  "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc": "Orca Whirlpool",
+  "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo": "Meteora DLMM",
+  "Eo7WjKq67rjJQSZxS6z3YkapzY3eBj6xGaBpnh77SXfQ": "Meteora Pools",
+};
+
+export interface LPVault {
+  /** DEX name (e.g., "Raydium AMM"). */
+  dex: string;
+  /** Vault token account owner. */
+  owner: string;
+  /** Token amount in the vault. */
+  amount: number;
+  /** Percentage of sampled supply in this vault. */
+  percentage: number;
+}
+
+export interface HolderAnalysis {
+  /** Regular (non-LP) holders. */
+  holders: TokenHolder[];
+  /** Identified LP vault positions. */
+  lpVaults: LPVault[];
+  /** Total percentage of supply in LP vaults. */
+  lpSupplyPercent: number;
+}
+
 export interface WalletTransaction {
   signature: string;
   slot: number;
@@ -178,6 +207,41 @@ export async function getTokenHolders(
     console.error(`Helius getTokenHolders failed for ${mint}:`, error);
     return [];
   }
+}
+
+// ---------------------------------------------------------------------------
+// analyzeHolders
+// ---------------------------------------------------------------------------
+
+/**
+ * Analyze token holders to separate regular holders from LP vault positions.
+ * Identifies accounts owned by known DEX programs.
+ */
+export function analyzeHolders(holders: TokenHolder[]): HolderAnalysis {
+  const lpVaults: LPVault[] = [];
+  const regularHolders: TokenHolder[] = [];
+
+  for (const holder of holders) {
+    const dex = DEX_PROGRAMS[holder.owner];
+    if (dex) {
+      lpVaults.push({
+        dex,
+        owner: holder.owner,
+        amount: holder.amount,
+        percentage: holder.percentage,
+      });
+    } else {
+      regularHolders.push(holder);
+    }
+  }
+
+  const lpSupplyPercent = lpVaults.reduce((sum, v) => sum + v.percentage, 0);
+
+  return {
+    holders: regularHolders,
+    lpVaults,
+    lpSupplyPercent,
+  };
 }
 
 // ---------------------------------------------------------------------------
