@@ -339,12 +339,19 @@ function detectRiskFlags(
 
   // 14. RugCheck danger
   if (rugCheckResult) {
+    // Build a detailed description listing individual risks
+    const riskDetails = rugCheckResult.risks
+      ?.filter((r) => r.level === "danger" || r.level === "error" || r.level === "warn")
+      .map((r) => `${r.name}${r.description ? `: ${r.description}` : ""}`)
+      .join(" | ") ?? "";
+
     if (rugCheckResult.riskLevel === "Danger") {
       flags.push(
         makeRiskFlag(
           "high",
           "RugCheck: Danger",
-          `RugCheck flagged this token as dangerous with ${rugCheckResult.riskCount} risk(s) detected.`
+          riskDetails ||
+            `RugCheck flagged this token as dangerous with ${rugCheckResult.riskCount} risk(s) detected.`
         )
       );
     } else if (rugCheckResult.riskCount >= 3) {
@@ -352,7 +359,8 @@ function detectRiskFlags(
         makeRiskFlag(
           "medium",
           "RugCheck: Multiple Warnings",
-          `RugCheck detected ${rugCheckResult.riskCount} risks for this token.`
+          riskDetails ||
+            `RugCheck detected ${rugCheckResult.riskCount} risks for this token.`
         )
       );
     }

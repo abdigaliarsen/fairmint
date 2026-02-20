@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
 import type { FairScoreTier, RiskFlag } from "@/types/database";
+import type { ComparisonMode } from "@/types/comparison";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -120,19 +121,26 @@ function DraggableTokenRow({ token }: { token: FeaturedToken }) {
 }
 
 // ---------------------------------------------------------------------------
-// Wallet Row (view-only with link)
+// Wallet Row — draggable when in wallets comparison mode, link otherwise
 // ---------------------------------------------------------------------------
 
-function WalletRow({ wallet }: { wallet: LeaderboardWallet }) {
+function WalletRow({
+  wallet,
+  draggableMode,
+}: {
+  wallet: LeaderboardWallet;
+  draggableMode: boolean;
+}) {
   const tierColors = getTierColor(wallet.tier);
   const displayScore = Math.min(100, (wallet.score / 1000) * 100).toFixed(1);
 
-  return (
-    <Link
-      href={`/reputation/${wallet.wallet}`}
-      className="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent"
-    >
-      <ShieldCheck className="size-3.5 shrink-0 text-muted-foreground/50" />
+  const content = (
+    <>
+      {draggableMode ? (
+        <GripVertical className="size-3.5 shrink-0 text-muted-foreground/50" />
+      ) : (
+        <ShieldCheck className="size-3.5 shrink-0 text-muted-foreground/50" />
+      )}
       <span className="min-w-0 flex-1 truncate font-mono text-sm text-foreground">
         {truncateAddress(wallet.wallet)}
       </span>
@@ -145,24 +153,59 @@ function WalletRow({ wallet }: { wallet: LeaderboardWallet }) {
       >
         {wallet.tier}
       </Badge>
-      <ExternalLink className="size-3 shrink-0 text-muted-foreground/40" />
+      {!draggableMode && (
+        <ExternalLink className="size-3 shrink-0 text-muted-foreground/40" />
+      )}
+    </>
+  );
+
+  if (draggableMode) {
+    return (
+      <div
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.setData("text/plain", wallet.wallet);
+          e.dataTransfer.effectAllowed = "copy";
+        }}
+        className="flex cursor-grab items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent active:cursor-grabbing"
+        role="option"
+        aria-label={`Drag wallet ${truncateAddress(wallet.wallet)} to compare`}
+      >
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={`/reputation/${wallet.wallet}`}
+      className="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent"
+    >
+      {content}
     </Link>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Deployer Row (view-only with link)
+// Deployer Row — draggable when in deployers comparison mode, link otherwise
 // ---------------------------------------------------------------------------
 
-function DeployerRow({ deployer }: { deployer: DerivedDeployer }) {
+function DeployerRow({
+  deployer,
+  draggableMode,
+}: {
+  deployer: DerivedDeployer;
+  draggableMode: boolean;
+}) {
   const tierColors = getTierColor(deployer.tier);
 
-  return (
-    <Link
-      href={`/deployer/${deployer.wallet}`}
-      className="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent"
-    >
-      <User className="size-3.5 shrink-0 text-muted-foreground/50" />
+  const content = (
+    <>
+      {draggableMode ? (
+        <GripVertical className="size-3.5 shrink-0 text-muted-foreground/50" />
+      ) : (
+        <User className="size-3.5 shrink-0 text-muted-foreground/50" />
+      )}
       <span className="min-w-0 flex-1 truncate font-mono text-sm text-foreground">
         {truncateAddress(deployer.wallet)}
       </span>
@@ -175,7 +218,35 @@ function DeployerRow({ deployer }: { deployer: DerivedDeployer }) {
       >
         {deployer.tier}
       </Badge>
-      <ExternalLink className="size-3 shrink-0 text-muted-foreground/40" />
+      {!draggableMode && (
+        <ExternalLink className="size-3 shrink-0 text-muted-foreground/40" />
+      )}
+    </>
+  );
+
+  if (draggableMode) {
+    return (
+      <div
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.setData("text/plain", deployer.wallet);
+          e.dataTransfer.effectAllowed = "copy";
+        }}
+        className="flex cursor-grab items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent active:cursor-grabbing"
+        role="option"
+        aria-label={`Drag deployer ${truncateAddress(deployer.wallet)} to compare`}
+      >
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={`/deployer/${deployer.wallet}`}
+      className="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent"
+    >
+      {content}
     </Link>
   );
 }
@@ -212,12 +283,23 @@ const TABS: { value: Tab; label: string; icon: typeof Coins }[] = [
 // Main Component
 // ---------------------------------------------------------------------------
 
-export default function SuggestionPanel() {
+interface SuggestionPanelProps {
+  comparisonMode?: ComparisonMode;
+}
+
+export default function SuggestionPanel({ comparisonMode }: SuggestionPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>("tokens");
   const [tokens, setTokens] = useState<FeaturedToken[]>([]);
   const [wallets, setWallets] = useState<LeaderboardWallet[]>([]);
   const [tokensLoading, setTokensLoading] = useState(true);
   const [walletsLoading, setWalletsLoading] = useState(true);
+
+  // Auto-switch suggestion tab when comparison mode changes
+  useEffect(() => {
+    if (comparisonMode) {
+      setActiveTab(comparisonMode);
+    }
+  }, [comparisonMode]);
 
   // Fetch top tokens
   useEffect(() => {
@@ -248,7 +330,6 @@ export default function SuggestionPanel() {
       if (existing) {
         existing.tokenCount += 1;
         existing.bestRating = Math.max(existing.bestRating, t.trust_rating);
-        // Upgrade tier to the best seen
         if (t.deployer_tier) existing.tier = t.deployer_tier;
       } else {
         map.set(t.deployer_wallet, {
@@ -264,13 +345,19 @@ export default function SuggestionPanel() {
     );
   }, [tokens]);
 
+  const instructionText =
+    comparisonMode === "wallets"
+      ? "Drag wallets into the comparison slots above."
+      : comparisonMode === "deployers"
+        ? "Drag deployers into the comparison slots above."
+        : "Drag tokens into the comparison slots above, or click wallets & deployers to view their profiles.";
+
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg">Quick Add</CardTitle>
         <p className="text-xs text-muted-foreground">
-          Drag tokens into the comparison slots above, or click wallets &amp;
-          deployers to view their profiles.
+          {instructionText}
         </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -321,7 +408,11 @@ export default function SuggestionPanel() {
             ) : wallets.length > 0 ? (
               <div className="flex flex-col gap-0.5">
                 {wallets.map((w) => (
-                  <WalletRow key={w.wallet} wallet={w} />
+                  <WalletRow
+                    key={w.wallet}
+                    wallet={w}
+                    draggableMode={comparisonMode === "wallets"}
+                  />
                 ))}
               </div>
             ) : (
@@ -337,7 +428,11 @@ export default function SuggestionPanel() {
             ) : deployers.length > 0 ? (
               <div className="flex flex-col gap-0.5">
                 {deployers.map((d) => (
-                  <DeployerRow key={d.wallet} deployer={d} />
+                  <DeployerRow
+                    key={d.wallet}
+                    deployer={d}
+                    draggableMode={comparisonMode === "deployers"}
+                  />
                 ))}
               </div>
             ) : (

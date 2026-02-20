@@ -10,6 +10,7 @@ import {
   ExternalLink,
   RefreshCw,
   AlertCircle,
+  AlertTriangle,
   BadgeCheck,
   Clock,
   ShieldCheck,
@@ -46,6 +47,7 @@ import { useSession } from "next-auth/react";
 import WatchlistButton from "@/components/features/WatchlistButton";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
+import type { RugCheckResult } from "@/services/rugcheck";
 import type { FairScoreTier } from "@/types/database";
 
 // ---------------------------------------------------------------------------
@@ -85,6 +87,94 @@ function CopyButton({ text }: { text: string }) {
         <Copy className="size-3.5" />
       )}
     </Button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// RugCheck Expandable Card
+// ---------------------------------------------------------------------------
+
+function RugCheckCard({ rugCheck }: { rugCheck: RugCheckResult }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const levelColor =
+    rugCheck.riskLevel === "Good"
+      ? "text-emerald-500"
+      : rugCheck.riskLevel === "Warning"
+        ? "text-yellow-500"
+        : "text-red-500";
+
+  const borderColor =
+    rugCheck.riskLevel === "Good"
+      ? "border-emerald-200 dark:border-emerald-800"
+      : rugCheck.riskLevel === "Warning"
+        ? "border-yellow-200 dark:border-yellow-800"
+        : "border-red-200 dark:border-red-800";
+
+  const hasRisks = rugCheck.risks && rugCheck.risks.length > 0;
+
+  return (
+    <Card className={cn("overflow-hidden", borderColor)}>
+      <button
+        type="button"
+        className="flex w-full items-center justify-between px-4 py-3 text-left"
+        onClick={() => hasRisks && setExpanded(!expanded)}
+        aria-expanded={expanded}
+        disabled={!hasRisks}
+      >
+        <div className="flex items-center gap-2">
+          <ShieldCheck className={cn("size-4", levelColor)} />
+          <span className="text-sm font-medium text-foreground">
+            RugCheck: {rugCheck.riskLevel}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            ({rugCheck.riskCount} risk
+            {rugCheck.riskCount !== 1 ? "s" : ""} detected)
+          </span>
+        </div>
+        {hasRisks && (
+          <span className="text-xs font-medium text-muted-foreground">
+            {expanded ? "Hide details" : "Show details"}
+          </span>
+        )}
+      </button>
+      {expanded && hasRisks && (
+        <CardContent className="border-t pt-3">
+          <ul className="flex flex-col gap-2">
+            {rugCheck.risks.map((risk, i) => {
+              const riskColor =
+                risk.level === "danger" || risk.level === "error"
+                  ? "text-red-600"
+                  : risk.level === "warn"
+                    ? "text-yellow-600"
+                    : risk.level === "good"
+                      ? "text-emerald-600"
+                      : "text-muted-foreground";
+              return (
+                <li
+                  key={`${risk.name}-${i}`}
+                  className="flex items-start gap-2 text-sm"
+                >
+                  <AlertTriangle
+                    className={cn("mt-0.5 size-3.5 shrink-0", riskColor)}
+                  />
+                  <div className="min-w-0">
+                    <span className="font-medium text-foreground">
+                      {risk.name}
+                    </span>
+                    {risk.description && (
+                      <p className="text-xs text-muted-foreground">
+                        {risk.description}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </CardContent>
+      )}
+    </Card>
   );
 }
 
@@ -252,21 +342,7 @@ export default function TokenPage() {
           </Card>
 
           {/* RugCheck Second Opinion */}
-          {data.rugCheck && (
-            <div className="flex items-center justify-center gap-2">
-              <ShieldCheck className={cn(
-                "size-4",
-                data.rugCheck.riskLevel === "Good" ? "text-emerald-500" :
-                data.rugCheck.riskLevel === "Warning" ? "text-yellow-500" : "text-red-500"
-              )} />
-              <span className="text-xs font-medium text-foreground">
-                RugCheck: {data.rugCheck.riskLevel}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                ({data.rugCheck.riskCount} risk{data.rugCheck.riskCount !== 1 ? "s" : ""} detected)
-              </span>
-            </div>
-          )}
+          {data.rugCheck && <RugCheckCard rugCheck={data.rugCheck} />}
 
           {/* --------------------------------------------------------------- */}
           {/* Score History                                                   */}

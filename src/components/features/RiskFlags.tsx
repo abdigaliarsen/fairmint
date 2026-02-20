@@ -1,6 +1,7 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RiskFlag } from "@/types/database";
 
@@ -40,6 +41,68 @@ function getSeverityStyles(severity: RiskFlag["severity"]): {
   }
 }
 
+function RiskFlagItem({ flag }: { flag: RiskFlag }) {
+  const [expanded, setExpanded] = useState(false);
+  const styles = getSeverityStyles(flag.severity);
+
+  return (
+    <li
+      className={cn(
+        "flex flex-col rounded-lg border",
+        styles.bg,
+        styles.border
+      )}
+    >
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-start gap-3 p-3 text-left"
+        aria-expanded={expanded}
+      >
+        <AlertTriangle
+          className={cn("mt-0.5 size-4 shrink-0", styles.icon)}
+          aria-hidden="true"
+        />
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <div className="flex items-center gap-2">
+            <span className={cn("text-sm font-medium", styles.text)}>
+              {flag.label}
+            </span>
+            <span
+              className={cn(
+                "rounded-full px-1.5 py-0.5 text-[10px] font-medium uppercase",
+                styles.bg,
+                styles.text
+              )}
+            >
+              {flag.severity}
+            </span>
+          </div>
+          {!expanded && flag.description && (
+            <p className="line-clamp-1 text-xs text-muted-foreground">
+              {flag.description}
+            </p>
+          )}
+        </div>
+        <span className="mt-0.5 shrink-0">
+          {expanded ? (
+            <ChevronUp className="size-4 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="size-4 text-muted-foreground" />
+          )}
+        </span>
+      </button>
+      {expanded && flag.description && (
+        <div className="border-t border-inherit px-3 pb-3 pt-2">
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {flag.description}
+          </p>
+        </div>
+      )}
+    </li>
+  );
+}
+
 export default function RiskFlags({ flags }: RiskFlagsProps) {
   if (flags.length === 0) {
     return (
@@ -49,43 +112,9 @@ export default function RiskFlags({ flags }: RiskFlagsProps) {
 
   return (
     <ul className="flex flex-col gap-2" aria-label="Risk flags">
-      {flags.map((flag) => {
-        const styles = getSeverityStyles(flag.severity);
-        return (
-          <li
-            key={flag.id}
-            className={cn(
-              "flex items-start gap-3 rounded-lg border p-3",
-              styles.bg,
-              styles.border
-            )}
-          >
-            <AlertTriangle
-              className={cn("mt-0.5 size-4 shrink-0", styles.icon)}
-              aria-hidden="true"
-            />
-            <div className="flex min-w-0 flex-col gap-0.5">
-              <div className="flex items-center gap-2">
-                <span className={cn("text-sm font-medium", styles.text)}>
-                  {flag.label}
-                </span>
-                <span
-                  className={cn(
-                    "rounded-full px-1.5 py-0.5 text-[10px] font-medium uppercase",
-                    styles.bg,
-                    styles.text
-                  )}
-                >
-                  {flag.severity}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {flag.description}
-              </p>
-            </div>
-          </li>
-        );
-      })}
+      {flags.map((flag) => (
+        <RiskFlagItem key={flag.id} flag={flag} />
+      ))}
     </ul>
   );
 }

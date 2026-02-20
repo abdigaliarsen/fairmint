@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { X, Trophy, AlertTriangle } from "lucide-react";
+import { X, Trophy, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
+import type { RiskFlag } from "@/types/database";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,17 +10,39 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import TrustRating from "@/components/features/TrustRating";
 import HolderQualityBar from "@/components/features/HolderQualityBar";
-import TokenSearch from "@/components/features/TokenSearch";
+import EntitySearch from "@/components/features/EntitySearch";
+import WalletSlotContent from "@/components/features/WalletSlotContent";
+import DeployerSlotContent from "@/components/features/DeployerSlotContent";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
-import type { TrustAnalysis } from "@/services/tokenAnalyzer";
+import type { ComparisonEntity, ComparisonMode } from "@/types/comparison";
 
 // ---------------------------------------------------------------------------
 // Empty Slot with Drop Zone
 // ---------------------------------------------------------------------------
 
-function EmptySlot({ onSelect }: { onSelect: (mint: string) => void }) {
+function EmptySlot({
+  mode,
+  onSelect,
+}: {
+  mode: ComparisonMode;
+  onSelect: (id: string) => void;
+}) {
   const [dragOver, setDragOver] = useState(false);
+
+  const dropLabel =
+    mode === "tokens"
+      ? "Drop token here"
+      : mode === "wallets"
+        ? "Drop wallet here"
+        : "Drop deployer here";
+
+  const addLabel =
+    mode === "tokens"
+      ? "Add a token to compare"
+      : mode === "wallets"
+        ? "Add a wallet to compare"
+        : "Add a deployer to compare";
 
   return (
     <Card
@@ -40,9 +63,9 @@ function EmptySlot({ onSelect }: { onSelect: (mint: string) => void }) {
       onDrop={(e) => {
         e.preventDefault();
         setDragOver(false);
-        const mint = e.dataTransfer.getData("text/plain").trim();
-        if (mint && mint.length >= 32 && mint.length <= 44) {
-          onSelect(mint);
+        const id = e.dataTransfer.getData("text/plain").trim();
+        if (id && id.length >= 32 && id.length <= 44) {
+          onSelect(id);
         }
       }}
     >
@@ -51,11 +74,11 @@ function EmptySlot({ onSelect }: { onSelect: (mint: string) => void }) {
           "text-sm text-muted-foreground transition-colors",
           dragOver && "text-emerald-600 font-medium"
         )}>
-          {dragOver ? "Drop token here" : "Add a token to compare"}
+          {dragOver ? dropLabel : addLabel}
         </p>
         {!dragOver && (
           <div className="w-full max-w-xs">
-            <TokenSearch onSelect={onSelect} placeholder="Search token..." />
+            <EntitySearch mode={mode} onSelect={onSelect} />
           </div>
         )}
         {dragOver && (
@@ -69,69 +92,59 @@ function EmptySlot({ onSelect }: { onSelect: (mint: string) => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// Props
+// Expandable Risk Flag for Comparison
 // ---------------------------------------------------------------------------
 
-interface ComparisonSlotProps {
-  token: TrustAnalysis | null;
-  loading: boolean;
-  isWinner: boolean;
-  onSelect: (mint: string) => void;
-  onRemove: () => void;
+function ComparisonRiskFlag({ flag }: { flag: RiskFlag }) {
+  const [expanded, setExpanded] = useState(false);
+  const iconColor =
+    flag.severity === "critical" || flag.severity === "high"
+      ? "text-red-500"
+      : flag.severity === "medium"
+        ? "text-yellow-500"
+        : "text-gray-400";
+
+  return (
+    <li className="flex flex-col">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-start gap-2 text-left"
+      >
+        <AlertTriangle
+          className={cn("mt-0.5 size-4 shrink-0", iconColor)}
+        />
+        <span className="flex-1 text-sm text-muted-foreground">
+          {flag.label}
+        </span>
+        {flag.description && (
+          expanded ? (
+            <ChevronUp className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/50" />
+          ) : (
+            <ChevronDown className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/50" />
+          )
+        )}
+      </button>
+      {expanded && flag.description && (
+        <p className="ml-6 mt-1 text-xs leading-relaxed text-muted-foreground">
+          {flag.description}
+        </p>
+      )}
+    </li>
+  );
 }
 
-export default function ComparisonSlot({
-  token,
-  loading,
-  isWinner,
-  onSelect,
-  onRemove,
-}: ComparisonSlotProps) {
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="flex flex-col gap-4 p-6">
-          <Skeleton className="h-6 w-32" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-2 w-full" />
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-2 w-full" />
-          <Skeleton className="h-16 w-full" />
-        </CardContent>
-      </Card>
-    );
-  }
+// ---------------------------------------------------------------------------
+// Token Slot Content (extracted from original)
+// ---------------------------------------------------------------------------
 
-  if (!token) {
-    return (
-      <EmptySlot onSelect={onSelect} />
-    );
-  }
-
+function TokenSlotContent({ token }: { token: import("@/services/tokenAnalyzer").TrustAnalysis }) {
   const tierColors = token.deployerTier
     ? getTierColor(token.deployerTier)
     : getTierColor("unrated");
 
   return (
-    <Card
-      className={cn("relative", isWinner && "ring-2 ring-emerald-500")}
-    >
-      {isWinner && (
-        <div className="absolute -top-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white">
-          <Trophy className="size-3" />
-          Best
-        </div>
-      )}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute right-2 top-2 size-7"
-        onClick={onRemove}
-        aria-label={`Remove ${token.name ?? token.mint}`}
-      >
-        <X className="size-4" />
-      </Button>
+    <>
       <CardHeader className="pb-3 pt-6">
         <CardTitle className="truncate text-lg">
           {token.name ?? "Unknown"}
@@ -148,7 +161,7 @@ export default function ComparisonSlot({
 
         <Separator />
 
-        {/* Deployer - always shown */}
+        {/* Deployer */}
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Deployer</span>
           <Badge
@@ -163,7 +176,7 @@ export default function ComparisonSlot({
           </Badge>
         </div>
 
-        {/* Holder Quality - always shown */}
+        {/* Holder Quality */}
         <HolderQualityBar
           score={token.holderQualityScore}
           holderCount={token.holderCount}
@@ -171,7 +184,7 @@ export default function ComparisonSlot({
 
         <Separator />
 
-        {/* Risk Flags - expanded with details */}
+        {/* Risk Flags */}
         <div className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-muted-foreground">
@@ -193,26 +206,96 @@ export default function ComparisonSlot({
           ) : (
             <ul className="flex flex-col gap-2">
               {token.riskFlags.map((flag) => (
-                <li key={flag.id} className="flex items-start gap-2">
-                  <AlertTriangle
-                    className={cn(
-                      "mt-0.5 size-4 shrink-0",
-                      flag.severity === "critical" || flag.severity === "high"
-                        ? "text-red-500"
-                        : flag.severity === "medium"
-                          ? "text-yellow-500"
-                          : "text-gray-400"
-                    )}
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    {flag.label}
-                  </span>
-                </li>
+                <ComparisonRiskFlag key={flag.id} flag={flag} />
               ))}
             </ul>
           )}
         </div>
       </CardContent>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
+
+interface ComparisonSlotProps {
+  entity: ComparisonEntity | null;
+  mode: ComparisonMode;
+  loading: boolean;
+  isWinner: boolean;
+  onSelect: (id: string) => void;
+  onRemove: () => void;
+}
+
+export default function ComparisonSlot({
+  entity,
+  mode,
+  loading,
+  isWinner,
+  onSelect,
+  onRemove,
+}: ComparisonSlotProps) {
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col gap-4 p-6">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-2 w-full" />
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-2 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!entity) {
+    return <EmptySlot mode={mode} onSelect={onSelect} />;
+  }
+
+  // Derive aria label for the remove button
+  const removeLabel =
+    entity.mode === "tokens"
+      ? `Remove ${entity.data.name ?? entity.data.mint}`
+      : `Remove ${entity.data.wallet}`;
+
+  return (
+    <Card
+      className={cn("relative", isWinner && "ring-2 ring-emerald-500")}
+    >
+      {isWinner && (
+        <div className="absolute -top-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white">
+          <Trophy className="size-3" />
+          Best
+        </div>
+      )}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute right-2 top-2 size-7"
+        onClick={onRemove}
+        aria-label={removeLabel}
+      >
+        <X className="size-4" />
+      </Button>
+
+      {entity.mode === "tokens" && <TokenSlotContent token={entity.data} />}
+
+      {entity.mode === "wallets" && (
+        <CardContent className="pt-8">
+          <WalletSlotContent data={entity.data} />
+        </CardContent>
+      )}
+
+      {entity.mode === "deployers" && (
+        <CardContent className="pt-8">
+          <DeployerSlotContent data={entity.data} />
+        </CardContent>
+      )}
     </Card>
   );
 }

@@ -83,7 +83,7 @@ export default function ReputationPage() {
   const [error, setError] = useState<string | null>(null);
   const { recordVisit } = useBrowsingHistory();
   const { data: session } = useSession();
-  const { items: watchlistItems, addToken, removeToken, loading: watchlistLoading } = useWatchlist(session?.user?.wallet ?? null);
+  const { items: watchlistItems, addItem, removeItem, loading: watchlistLoading } = useWatchlist(session?.user?.wallet ?? null);
   const isWatched = watchlistItems.some((i) => i.mint === wallet);
 
   useEffect(() => {
@@ -179,7 +179,7 @@ export default function ReputationPage() {
             </Button>
             <WatchlistButton
               isWatched={isWatched}
-              onToggle={() => isWatched ? removeToken(wallet) : addToken(wallet)}
+              onToggle={() => isWatched ? removeItem(wallet) : addItem(wallet, "wallet")}
               loading={watchlistLoading}
             />
           </div>

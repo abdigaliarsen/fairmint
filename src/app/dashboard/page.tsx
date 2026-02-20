@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import FairScoreDisplay from "@/components/features/FairScoreDisplay";
-import TokenCard from "@/components/features/TokenCard";
+import WatchlistCard from "@/components/features/WatchlistCard";
 import TokenSearch from "@/components/features/TokenSearch";
 import ScoreRecommendations from "@/components/features/ScoreRecommendations";
 import { useFairScore } from "@/hooks/useFairScore";
@@ -132,7 +132,7 @@ export default function DashboardPage() {
     items: watchlistItems,
     loading: watchlistLoading,
     addToken,
-    removeToken,
+    removeItem,
   } = useWatchlist(walletAddress);
 
   // Determine current tier
@@ -242,16 +242,7 @@ export default function DashboardPage() {
                   </h3>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {watchlistItems.slice(0, 3).map((item) => (
-                      <TokenCard
-                        key={item.id}
-                        mint={item.mint}
-                        name={item.token?.name ?? null}
-                        symbol={item.token?.symbol ?? null}
-                        trustRating={item.token?.trust_rating ?? 0}
-                        deployerTier={
-                          (item.token?.deployer_tier as FairScoreTier) ?? null
-                        }
-                      />
+                      <WatchlistCard key={item.id} entry={item} />
                     ))}
                   </div>
                 </section>
@@ -281,15 +272,7 @@ export default function DashboardPage() {
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {watchlistItems.map((item) => (
                     <div key={item.id} className="group relative">
-                      <TokenCard
-                        mint={item.mint}
-                        name={item.token?.name ?? null}
-                        symbol={item.token?.symbol ?? null}
-                        trustRating={item.token?.trust_rating ?? 0}
-                        deployerTier={
-                          (item.token?.deployer_tier as FairScoreTier) ?? null
-                        }
-                      />
+                      <WatchlistCard entry={item} />
                       <Button
                         variant="ghost"
                         size="icon"
@@ -297,7 +280,7 @@ export default function DashboardPage() {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          removeToken(item.mint);
+                          removeItem(item.mint);
                         }}
                         aria-label={`Remove ${item.token?.name ?? item.mint} from watchlist`}
                       >

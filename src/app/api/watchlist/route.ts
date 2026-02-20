@@ -2,13 +2,14 @@
  * /api/watchlist
  *
  * GET    — Fetch watchlist items for a wallet.
- * POST   — Add a token mint to a wallet's watchlist.
- * DELETE — Remove a token mint from a wallet's watchlist.
+ * POST   — Add an entity (token, wallet, deployer) to a wallet's watchlist.
+ * DELETE — Remove an entity from a wallet's watchlist.
  *
  * DB schema (watchlist table):
  *   id          integer (auto-increment PK)
  *   user_wallet varchar
- *   token_mint  varchar
+ *   token_mint  varchar  — stores the address (token mint, wallet, or deployer)
+ *   entity_type varchar  — "token" | "wallet" | "deployer" (defaults to "token")
  *   added_at    timestamptz (default now())
  *
  * All operations use the Supabase service client (server-side only).
@@ -17,6 +18,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { FairScoreTier } from "@/types/database";
 
 // ---------------------------------------------------------------------------
 // Validation schemas
@@ -36,8 +38,23 @@ const walletTokenSchema = z.object({
     .max(44, "Invalid wallet address"),
   tokenMint: z
     .string()
-    .min(32, "Invalid token mint address")
-    .max(44, "Invalid token mint address"),
+    .min(32, "Invalid address")
+    .max(44, "Invalid address"),
+  entityType: z
+    .enum(["token", "wallet", "deployer"])
+    .optional()
+    .default("token"),
+});
+
+const deleteSchema = z.object({
+  wallet: z
+    .string()
+    .min(32, "Invalid wallet address")
+    .max(44, "Invalid wallet address"),
+  tokenMint: z
+    .string()
+    .min(32, "Invalid address")
+    .max(44, "Invalid address"),
 });
 
 // ---------------------------------------------------------------------------
@@ -64,7 +81,7 @@ export async function GET(request: NextRequest) {
     // Fetch watchlist items for this wallet
     const { data: watchlistItems, error } = await supabase
       .from("watchlist")
-      .select("id, user_wallet, token_mint, added_at")
+      .select("id, user_wallet, token_mint, entity_type, added_at")
       .eq("user_wallet", wallet)
       .order("added_at", { ascending: false });
 
@@ -76,8 +93,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Enrich watchlist items with token analysis data
-    const mints = (watchlistItems ?? []).map((item) => item.token_mint);
+    const items = watchlistItems ?? [];
+
+    // Split items by entity type for targeted enrichment
+    const tokenMints = items
+      .filter((i) => !i.entity_type || i.entity_type === "token")
+      .map((i) => i.token_mint);
+    const walletAddresses = items
+      .filter((i) => i.entity_type === "wallet" || i.entity_type === "deployer")
+      .map((i) => i.token_mint);
+
+    // Enrich token items from token_analyses
     let tokenData: Record<
       string,
       {
@@ -88,11 +114,11 @@ export async function GET(request: NextRequest) {
       }
     > = {};
 
-    if (mints.length > 0) {
+    if (tokenMints.length > 0) {
       const { data: tokens } = await supabase
         .from("token_analyses")
         .select("mint, name, symbol, trust_rating, deployer_tier")
-        .in("mint", mints);
+        .in("mint", tokenMints);
 
       if (tokens) {
         tokenData = Object.fromEntries(
@@ -109,13 +135,44 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Enrich wallet/deployer items from cached_scores
+    let walletData: Record<
+      string,
+      { score: number; tier: FairScoreTier }
+    > = {};
+
+    if (walletAddresses.length > 0) {
+      const { data: scores } = await supabase
+        .from("cached_scores")
+        .select("wallet, score_decimal, tier")
+        .in("wallet", walletAddresses);
+
+      if (scores) {
+        walletData = Object.fromEntries(
+          scores.map((s) => [
+            s.wallet,
+            { score: s.score_decimal, tier: s.tier as FairScoreTier },
+          ])
+        );
+      }
+    }
+
     // Map to the shape the frontend expects
-    const enrichedItems = (watchlistItems ?? []).map((item) => ({
-      id: String(item.id),
-      mint: item.token_mint,
-      added_at: item.added_at,
-      token: tokenData[item.token_mint] ?? null,
-    }));
+    const enrichedItems = items.map((item) => {
+      const entityType = item.entity_type || "token";
+
+      return {
+        id: String(item.id),
+        mint: item.token_mint,
+        entity_type: entityType,
+        added_at: item.added_at,
+        token: entityType === "token" ? (tokenData[item.token_mint] ?? null) : null,
+        walletInfo:
+          entityType === "wallet" || entityType === "deployer"
+            ? (walletData[item.token_mint] ?? null)
+            : null,
+      };
+    });
 
     return NextResponse.json({ items: enrichedItems });
   } catch (error) {
@@ -128,7 +185,7 @@ export async function GET(request: NextRequest) {
 }
 
 // ---------------------------------------------------------------------------
-// POST — Add token to watchlist
+// POST — Add entity to watchlist
 // ---------------------------------------------------------------------------
 
 export async function POST(request: NextRequest) {
@@ -143,7 +200,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { wallet, tokenMint } = parsed.data;
+    const { wallet, tokenMint, entityType } = parsed.data;
     const supabase = createServerSupabaseClient();
 
     // Check for duplicate
@@ -156,7 +213,7 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       return NextResponse.json(
-        { error: "Token already in watchlist" },
+        { error: "Already in watchlist" },
         { status: 409 }
       );
     }
@@ -167,8 +224,9 @@ export async function POST(request: NextRequest) {
       .insert({
         user_wallet: wallet,
         token_mint: tokenMint,
+        entity_type: entityType,
       })
-      .select("id, token_mint, added_at")
+      .select("id, token_mint, entity_type, added_at")
       .single();
 
     if (insertError) {
@@ -184,8 +242,10 @@ export async function POST(request: NextRequest) {
         item: {
           id: String(item.id),
           mint: item.token_mint,
+          entity_type: item.entity_type || entityType,
           added_at: item.added_at,
           token: null,
+          walletInfo: null,
         },
       },
       { status: 201 }
@@ -200,13 +260,13 @@ export async function POST(request: NextRequest) {
 }
 
 // ---------------------------------------------------------------------------
-// DELETE — Remove token from watchlist
+// DELETE — Remove entity from watchlist
 // ---------------------------------------------------------------------------
 
 export async function DELETE(request: NextRequest) {
   try {
     const body = await request.json();
-    const parsed = walletTokenSchema.safeParse(body);
+    const parsed = deleteSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(

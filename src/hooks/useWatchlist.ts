@@ -7,6 +7,8 @@ import type { FairScoreTier } from "@/types/database";
 // Types
 // ---------------------------------------------------------------------------
 
+export type WatchlistEntityType = "token" | "wallet" | "deployer";
+
 export interface WatchlistTokenInfo {
   name: string | null;
   symbol: string | null;
@@ -14,17 +16,28 @@ export interface WatchlistTokenInfo {
   deployer_tier: FairScoreTier | null;
 }
 
+export interface WatchlistWalletInfo {
+  score: number;
+  tier: FairScoreTier;
+}
+
 export interface WatchlistEntry {
   id: string;
   mint: string;
+  entity_type: WatchlistEntityType;
   added_at: string;
   token: WatchlistTokenInfo | null;
+  walletInfo: WatchlistWalletInfo | null;
 }
 
 interface UseWatchlistReturn {
   items: WatchlistEntry[];
   loading: boolean;
+  addItem: (address: string, entityType?: WatchlistEntityType) => Promise<void>;
+  removeItem: (address: string) => Promise<void>;
+  /** @deprecated Use addItem instead */
   addToken: (tokenMint: string) => Promise<void>;
+  /** @deprecated Use removeItem instead */
   removeToken: (tokenMint: string) => Promise<void>;
 }
 
@@ -35,7 +48,7 @@ interface UseWatchlistReturn {
 /**
  * Manage a wallet's watchlist via `/api/watchlist`.
  *
- * Returns `{ items, loading, addToken, removeToken }`.
+ * Returns `{ items, loading, addItem, removeItem, addToken, removeToken }`.
  */
 export function useWatchlist(wallet: string | null): UseWatchlistReturn {
   const [items, setItems] = useState<WatchlistEntry[]>([]);
@@ -69,15 +82,15 @@ export function useWatchlist(wallet: string | null): UseWatchlistReturn {
     fetchWatchlist();
   }, [fetchWatchlist]);
 
-  const addToken = useCallback(
-    async (tokenMint: string) => {
+  const addItem = useCallback(
+    async (address: string, entityType: WatchlistEntityType = "token") => {
       if (!wallet) return;
 
       try {
         const res = await fetch("/api/watchlist", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ wallet, tokenMint }),
+          body: JSON.stringify({ wallet, tokenMint: address, entityType }),
         });
 
         if (res.ok) {
@@ -91,18 +104,18 @@ export function useWatchlist(wallet: string | null): UseWatchlistReturn {
     [wallet, fetchWatchlist]
   );
 
-  const removeToken = useCallback(
-    async (tokenMint: string) => {
+  const removeItem = useCallback(
+    async (address: string) => {
       if (!wallet) return;
 
       // Optimistic removal
-      setItems((prev) => prev.filter((item) => item.mint !== tokenMint));
+      setItems((prev) => prev.filter((item) => item.mint !== address));
 
       try {
         const res = await fetch("/api/watchlist", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ wallet, tokenMint }),
+          body: JSON.stringify({ wallet, tokenMint: address }),
         });
 
         if (!res.ok) {
@@ -116,5 +129,15 @@ export function useWatchlist(wallet: string | null): UseWatchlistReturn {
     [wallet, fetchWatchlist]
   );
 
-  return { items, loading, addToken, removeToken };
+  // Backwards-compatible aliases
+  const addToken = useCallback(
+    (tokenMint: string) => addItem(tokenMint, "token"),
+    [addItem]
+  );
+  const removeToken = useCallback(
+    (tokenMint: string) => removeItem(tokenMint),
+    [removeItem]
+  );
+
+  return { items, loading, addItem, removeItem, addToken, removeToken };
 }

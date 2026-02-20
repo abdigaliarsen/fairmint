@@ -147,7 +147,7 @@ export default function DeployerPage() {
   const { data, loading, error, refetch } = useDeployerProfile(wallet);
   const { recordVisit } = useBrowsingHistory();
   const { data: session } = useSession();
-  const { items: watchlistItems, addToken, removeToken, loading: watchlistLoading } = useWatchlist(session?.user?.wallet ?? null);
+  const { items: watchlistItems, addItem, removeItem, loading: watchlistLoading } = useWatchlist(session?.user?.wallet ?? null);
   const isWatched = data ? watchlistItems.some((i) => i.mint === data.wallet) : false;
 
   useEffect(() => {
@@ -216,7 +216,7 @@ export default function DeployerPage() {
               <CopyButton text={data.wallet} />
               <WatchlistButton
                 isWatched={isWatched}
-                onToggle={() => isWatched ? removeToken(data.wallet) : addToken(data.wallet)}
+                onToggle={() => isWatched ? removeItem(data.wallet) : addItem(data.wallet, "deployer")}
                 loading={watchlistLoading}
               />
             </div>

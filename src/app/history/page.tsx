@@ -176,7 +176,7 @@ function HistoryEntryCard({
 export default function HistoryPage() {
   const { entries, clearHistory } = useBrowsingHistory();
   const { data: session } = useSession();
-  const { items: watchlistItems, addToken, removeToken, loading: watchlistLoading } = useWatchlist(session?.user?.wallet ?? null);
+  const { items: watchlistItems, addItem, removeItem, loading: watchlistLoading } = useWatchlist(session?.user?.wallet ?? null);
   const watchlistMints = useMemo(() => new Set(watchlistItems.map((i) => i.mint)), [watchlistItems]);
   const [typeFilter, setTypeFilter] = useState<
     BrowsingHistoryType | "all"
@@ -268,8 +268,15 @@ export default function HistoryPage() {
               isWatched={watchlistMints.has(entry.subject)}
               onToggleWatchlist={() =>
                 watchlistMints.has(entry.subject)
-                  ? removeToken(entry.subject)
-                  : addToken(entry.subject)
+                  ? removeItem(entry.subject)
+                  : addItem(
+                      entry.subject,
+                      entry.type === "reputation"
+                        ? "wallet"
+                        : entry.type === "deployer"
+                          ? "deployer"
+                          : "token"
+                    )
               }
               watchlistLoading={watchlistLoading}
             />

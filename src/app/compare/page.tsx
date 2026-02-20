@@ -2,13 +2,14 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Scale } from "lucide-react";
+import { Scale, Coins, ShieldCheck, User } from "lucide-react";
 import ComparisonSlot from "@/components/features/ComparisonSlot";
 import SuggestionPanel from "@/components/features/SuggestionPanel";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFairScore } from "@/hooks/useFairScore";
 import { cn } from "@/lib/utils";
-import type { TrustAnalysis } from "@/services/tokenAnalyzer";
 import type { FairScoreTier } from "@/types/database";
+import type { ComparisonEntity, ComparisonMode } from "@/types/comparison";
 
 function getMaxSlots(tier: FairScoreTier): number {
   switch (tier) {
@@ -22,6 +23,27 @@ function getMaxSlots(tier: FairScoreTier): number {
   }
 }
 
+const MODE_CONFIG: Record<
+  ComparisonMode,
+  { title: string; description: string; icon: typeof Scale }
+> = {
+  tokens: {
+    title: "Token Comparison",
+    description: "Compare tokens side-by-side.",
+    icon: Coins,
+  },
+  wallets: {
+    title: "Wallet Comparison",
+    description: "Compare wallet reputations side-by-side.",
+    icon: ShieldCheck,
+  },
+  deployers: {
+    title: "Deployer Comparison",
+    description: "Compare deployer profiles side-by-side.",
+    icon: User,
+  },
+};
+
 export default function ComparePage() {
   const { publicKey } = useWallet();
   const walletAddress = publicKey?.toBase58() ?? null;
@@ -30,7 +52,8 @@ export default function ComparePage() {
   const currentTier: FairScoreTier = fairScore?.tier ?? "unrated";
   const maxSlots = getMaxSlots(currentTier);
 
-  const [tokens, setTokens] = useState<(TrustAnalysis | null)[]>(
+  const [mode, setMode] = useState<ComparisonMode>("tokens");
+  const [entities, setEntities] = useState<(ComparisonEntity | null)[]>(
     Array(2).fill(null)
   );
   const [loadingSlots, setLoadingSlots] = useState<boolean[]>(
@@ -39,7 +62,7 @@ export default function ComparePage() {
 
   // Adjust slot count when tier changes
   useEffect(() => {
-    setTokens((prev) => {
+    setEntities((prev) => {
       if (prev.length === maxSlots) return prev;
       if (prev.length < maxSlots) {
         return [...prev, ...Array(maxSlots - prev.length).fill(null)];
@@ -55,8 +78,19 @@ export default function ComparePage() {
     });
   }, [maxSlots]);
 
+  // Clear all slots when mode changes
+  const handleModeChange = useCallback(
+    (newMode: string) => {
+      const m = newMode as ComparisonMode;
+      setMode(m);
+      setEntities(Array(maxSlots).fill(null));
+      setLoadingSlots(Array(maxSlots).fill(false));
+    },
+    [maxSlots]
+  );
+
   const handleSelect = useCallback(
-    async (slotIndex: number, mint: string) => {
+    async (slotIndex: number, id: string) => {
       setLoadingSlots((prev) => {
         const next = [...prev];
         next[slotIndex] = true;
@@ -64,18 +98,48 @@ export default function ComparePage() {
       });
 
       try {
-        const res = await fetch(
-          `/api/compare?mints=${encodeURIComponent(mint)}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          const token = data.tokens?.[0] ?? null;
-          setTokens((prev) => {
-            const next = [...prev];
-            next[slotIndex] = token;
-            return next;
-          });
+        let entity: ComparisonEntity | null = null;
+
+        if (mode === "tokens") {
+          const res = await fetch(
+            `/api/compare?mints=${encodeURIComponent(id)}`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const token = data.tokens?.[0] ?? null;
+            if (token) {
+              entity = { mode: "tokens", data: token };
+            }
+          }
+        } else if (mode === "wallets") {
+          const res = await fetch(
+            `/api/compare/wallets?addresses=${encodeURIComponent(id)}`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const wallet = data.wallets?.[0] ?? null;
+            if (wallet) {
+              entity = { mode: "wallets", data: wallet };
+            }
+          }
+        } else if (mode === "deployers") {
+          const res = await fetch(
+            `/api/compare/deployers?addresses=${encodeURIComponent(id)}`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const deployer = data.deployers?.[0] ?? null;
+            if (deployer) {
+              entity = { mode: "deployers", data: deployer };
+            }
+          }
         }
+
+        setEntities((prev) => {
+          const next = [...prev];
+          next[slotIndex] = entity;
+          return next;
+        });
       } catch {
         // keep slot empty on error
       } finally {
@@ -86,41 +150,71 @@ export default function ComparePage() {
         });
       }
     },
-    []
+    [mode]
   );
 
   const handleRemove = useCallback((slotIndex: number) => {
-    setTokens((prev) => {
+    setEntities((prev) => {
       const next = [...prev];
       next[slotIndex] = null;
       return next;
     });
   }, []);
 
-  // Determine winner (highest trust rating among filled slots)
-  const filledTokens = tokens.filter(Boolean) as TrustAnalysis[];
-  const highestRating =
-    filledTokens.length >= 2
-      ? Math.max(...filledTokens.map((t) => t.trustRating))
-      : -1;
+  // Determine winner (highest score among filled slots)
+  const filledEntities = entities.filter(Boolean) as ComparisonEntity[];
+  const scores = filledEntities.map((e) => {
+    if (e.mode === "tokens") return e.data.trustRating;
+    return e.data.score;
+  });
+  const highestScore =
+    filledEntities.length >= 2 ? Math.max(...scores) : -1;
+
+  function getEntityScore(entity: ComparisonEntity): number {
+    if (entity.mode === "tokens") return entity.data.trustRating;
+    return entity.data.score;
+  }
+
+  const config = MODE_CONFIG[mode];
+  const ModeIcon = config.icon;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8 flex flex-col gap-2">
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground sm:text-3xl">
-          <Scale className="size-7 text-emerald-600" />
-          Token Comparison
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Compare tokens side-by-side. {maxSlots} slots available for your{" "}
-          <span className="font-medium capitalize">{currentTier}</span> tier.
-          {currentTier !== "gold" && currentTier !== "platinum" && (
-            <span>
-              {" "}
-              Upgrade your FairScale reputation to unlock more slots.
-            </span>
-          )}
-        </p>
+      <div className="mb-8 flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground sm:text-3xl">
+            <ModeIcon className="size-7 text-emerald-600" />
+            {config.title}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {config.description} {maxSlots} slots available for your{" "}
+            <span className="font-medium capitalize">{currentTier}</span> tier.
+            {currentTier !== "gold" && currentTier !== "platinum" && (
+              <span>
+                {" "}
+                Upgrade your FairScale reputation to unlock more slots.
+              </span>
+            )}
+          </p>
+        </div>
+
+        {/* Mode selector */}
+        <Tabs value={mode} onValueChange={handleModeChange}>
+          <TabsList>
+            <TabsTrigger value="tokens">
+              <Coins className="size-4" />
+              Tokens
+            </TabsTrigger>
+            <TabsTrigger value="wallets">
+              <ShieldCheck className="size-4" />
+              Wallets
+            </TabsTrigger>
+            <TabsTrigger value="deployers">
+              <User className="size-4" />
+              Deployers
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       <div
@@ -131,17 +225,18 @@ export default function ComparePage() {
           maxSlots === 4 && "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
         )}
       >
-        {tokens.slice(0, maxSlots).map((token, i) => (
+        {entities.slice(0, maxSlots).map((entity, i) => (
           <ComparisonSlot
-            key={i}
-            token={token}
+            key={`${mode}-${i}`}
+            entity={entity}
+            mode={mode}
             loading={loadingSlots[i]}
             isWinner={
-              token !== null &&
-              filledTokens.length >= 2 &&
-              token.trustRating === highestRating
+              entity !== null &&
+              filledEntities.length >= 2 &&
+              getEntityScore(entity) === highestScore
             }
-            onSelect={(mint) => handleSelect(i, mint)}
+            onSelect={(id) => handleSelect(i, id)}
             onRemove={() => handleRemove(i)}
           />
         ))}
@@ -149,7 +244,7 @@ export default function ComparePage() {
 
       {/* Suggestion panel for quick-add via drag & drop */}
       <div className="mx-auto mt-8 max-w-3xl">
-        <SuggestionPanel />
+        <SuggestionPanel comparisonMode={mode} />
       </div>
     </div>
   );
