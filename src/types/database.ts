@@ -18,7 +18,16 @@ export interface Badge {
   label: string;
   description: string;
   tier: FairScoreTier;
-  awardedAt: string;
+  awardedAt?: string;
+}
+
+/** Recommended action from the FairScale API. */
+export interface FairScaleAction {
+  id: string;
+  label: string;
+  description: string;
+  priority: "high" | "medium" | "low";
+  cta?: string;
 }
 
 /** Risk flag attached to a token analysis. */
@@ -45,6 +54,8 @@ export interface FairScoreData {
   decimalScore: number;
   /** Integer score (0-1000+) from the /fairScore endpoint */
   integerScore: number;
+  /** Recommended actions from FairScale */
+  actions?: FairScaleAction[];
 }
 
 // ---------------------------------------------------------------------------

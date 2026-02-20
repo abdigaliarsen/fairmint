@@ -15,6 +15,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type {
   FairScoreTier,
   FairScoreData,
+  FairScaleAction,
   Badge,
   CachedScoreInsert,
 } from "@/types/database";
@@ -140,13 +141,22 @@ async function fairscaleFetch<T>(
 
 interface FairScaleScoreResponse {
   wallet: string;
-  score: number;
+  fairscore: number;
+  fairscore_base: number;
+  social_score: number;
+  tier: string;
   badges?: Array<{
     id: string;
     label: string;
     description: string;
     tier: string;
-    awardedAt: string;
+  }>;
+  actions?: Array<{
+    id: string;
+    label: string;
+    description: string;
+    priority: string;
+    cta?: string;
   }>;
   [key: string]: unknown;
 }
@@ -176,7 +186,14 @@ export async function getFullScore(
 
   if (cached) {
     const age = Date.now() - new Date(cached.fetched_at).getTime();
-    if (age < CACHE_TTL_MS) {
+    // Skip cache if scores are invalid (stale entries from old field mapping)
+    const hasValidScores =
+      cached.score_decimal != null &&
+      !Number.isNaN(cached.score_decimal) &&
+      cached.score_integer != null &&
+      !Number.isNaN(cached.score_integer);
+
+    if (age < CACHE_TTL_MS && hasValidScores) {
       return {
         wallet: cached.wallet,
         score: cached.score_decimal,
@@ -193,24 +210,31 @@ export async function getFullScore(
   const data = await fairscaleFetch<FairScaleScoreResponse>("/score", wallet);
   if (!data) return null;
 
-  // The /score endpoint returns a decimal score (0-100).
-  // Also fetch the integer score for tier classification.
+  // The /score endpoint returns `fairscore` (decimal 0-100) and `tier` directly.
+  // Also fetch the integer score for caching/display.
   const integerScore = await getQuickScore(wallet);
-  const effectiveIntegerScore = integerScore ?? Math.round(data.score * 10);
-  const tier = classifyTier(effectiveIntegerScore);
+  const effectiveIntegerScore = integerScore ?? Math.round(data.fairscore * 10);
+  const tier = (data.tier as FairScoreTier) || classifyTier(effectiveIntegerScore);
 
   const badges: Badge[] = (data.badges ?? []).map((b) => ({
     id: b.id,
     label: b.label,
     description: b.description,
     tier: (b.tier as FairScoreTier) || "bronze",
-    awardedAt: b.awardedAt,
+  }));
+
+  const actions: FairScaleAction[] = (data.actions ?? []).map((a) => ({
+    id: a.id,
+    label: a.label,
+    description: a.description,
+    priority: (a.priority as "high" | "medium" | "low") || "medium",
+    cta: a.cta,
   }));
 
   // 3. Upsert cache
   const cacheRow: CachedScoreInsert = {
     wallet,
-    score_decimal: data.score,
+    score_decimal: data.fairscore,
     score_integer: effectiveIntegerScore,
     tier,
     badges,
@@ -226,11 +250,12 @@ export async function getFullScore(
 
   return {
     wallet,
-    score: data.score,
+    score: data.fairscore,
     tier,
     badges,
+    actions,
     updatedAt: cacheRow.fetched_at,
-    decimalScore: data.score,
+    decimalScore: data.fairscore,
     integerScore: effectiveIntegerScore,
   };
 }
@@ -240,7 +265,7 @@ export async function getFullScore(
 // ---------------------------------------------------------------------------
 
 interface FairScaleQuickResponse {
-  score: number;
+  fair_score: number;
   [key: string]: unknown;
 }
 
@@ -255,7 +280,7 @@ export async function getQuickScore(wallet: string): Promise<number | null> {
     "/fairScore",
     wallet
   );
-  return data?.score ?? null;
+  return data?.fair_score ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -263,7 +288,7 @@ export async function getQuickScore(wallet: string): Promise<number | null> {
 // ---------------------------------------------------------------------------
 
 interface FairScaleWalletResponse {
-  score: number;
+  wallet_score: number;
   [key: string]: unknown;
 }
 
@@ -277,5 +302,5 @@ export async function getWalletScore(wallet: string): Promise<number | null> {
     "/walletScore",
     wallet
   );
-  return data?.score ?? null;
+  return data?.wallet_score ?? null;
 }

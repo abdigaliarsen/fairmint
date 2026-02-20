@@ -12,8 +12,10 @@ export interface Recommendation {
 /**
  * Generate reputation improvement recommendations for a wallet.
  *
- * Analyzes FairScore data and optional token analysis to produce
- * actionable tips. Tier gating controls detail level:
+ * If the FairScale API returned `actions`, those are used directly.
+ * Otherwise, falls back to heuristic-based tips.
+ *
+ * Tier gating controls detail level:
  *   - unrated/bronze: basic tips (top 3)
  *   - silver: detailed tips (top 5)
  *   - gold/platinum: full action plan (all)
@@ -23,10 +25,45 @@ export function generateRecommendations(
   tokens?: TrustAnalysis[],
   tier?: FairScoreTier
 ): Recommendation[] {
-  const recs: Recommendation[] = [];
   const effectiveTier = tier ?? fairScore?.tier ?? "unrated";
 
-  // 1. No score at all
+  // Use FairScale API actions when available
+  if (fairScore?.actions && fairScore.actions.length > 0) {
+    const recs: Recommendation[] = fairScore.actions.map((action) => ({
+      id: action.id,
+      priority: action.priority,
+      title: action.label,
+      description: action.description,
+      category: "score" as const,
+    }));
+
+    // Add tier-push recommendation if not already covered by API actions
+    if (fairScore.integerScore >= 300 && fairScore.integerScore < 600) {
+      recs.push({
+        id: "push-gold",
+        priority: "medium",
+        title: "Reach Gold tier",
+        description:
+          "You're Silver tier — keep building consistent on-chain activity to reach Gold (600+).",
+        category: "score",
+      });
+    } else if (fairScore.integerScore >= 600 && fairScore.integerScore < 850) {
+      recs.push({
+        id: "push-platinum",
+        priority: "low",
+        title: "Reach Platinum tier",
+        description:
+          "You're Gold tier — maintain activity and earn more badges to reach Platinum (850+).",
+        category: "score",
+      });
+    }
+
+    return applyTierLimit(recs, effectiveTier);
+  }
+
+  // Fallback: heuristic-based recommendations
+  const recs: Recommendation[] = [];
+
   if (!fairScore || effectiveTier === "unrated") {
     recs.push({
       id: "no-score",
@@ -38,7 +75,6 @@ export function generateRecommendations(
     });
   }
 
-  // 2. Low score
   if (fairScore && fairScore.integerScore < 300) {
     recs.push({
       id: "low-score",
@@ -50,7 +86,6 @@ export function generateRecommendations(
     });
   }
 
-  // 3. No badges
   if (!fairScore?.badges || fairScore.badges.length === 0) {
     recs.push({
       id: "no-badges",
@@ -62,7 +97,6 @@ export function generateRecommendations(
     });
   }
 
-  // 4. Token-specific: high concentration
   if (tokens?.some((t) => t.topHolderConcentration > 25)) {
     recs.push({
       id: "concentration",
@@ -74,7 +108,6 @@ export function generateRecommendations(
     });
   }
 
-  // 5. Token-specific: active mint authority
   if (
     tokens?.some((t) =>
       t.riskFlags.some((f) => f.label === "Active Mint Authority")
@@ -90,7 +123,6 @@ export function generateRecommendations(
     });
   }
 
-  // 6. Token-specific: active freeze authority
   if (
     tokens?.some((t) =>
       t.riskFlags.some((f) => f.label === "Active Freeze Authority")
@@ -106,7 +138,6 @@ export function generateRecommendations(
     });
   }
 
-  // 7. Score between 300-600: push to gold
   if (
     fairScore &&
     fairScore.integerScore >= 300 &&
@@ -122,7 +153,6 @@ export function generateRecommendations(
     });
   }
 
-  // 8. Score between 600-850: push to platinum
   if (
     fairScore &&
     fairScore.integerScore >= 600 &&
@@ -138,7 +168,10 @@ export function generateRecommendations(
     });
   }
 
-  // Tier-based limit
+  return applyTierLimit(recs, effectiveTier);
+}
+
+function applyTierLimit(recs: Recommendation[], tier: string): Recommendation[] {
   const tierOrder: Record<string, number> = {
     unrated: -1,
     bronze: 0,
@@ -146,9 +179,9 @@ export function generateRecommendations(
     gold: 2,
     platinum: 3,
   };
-  const rank = tierOrder[effectiveTier] ?? -1;
+  const rank = tierOrder[tier] ?? -1;
 
-  if (rank <= 0) return recs.slice(0, 3); // basic tips
-  if (rank === 1) return recs.slice(0, 5); // detailed tips
-  return recs; // full action plan
+  if (rank <= 0) return recs.slice(0, 3);
+  if (rank === 1) return recs.slice(0, 5);
+  return recs;
 }
