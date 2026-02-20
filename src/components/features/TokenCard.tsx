@@ -53,14 +53,16 @@ export default function TokenCard({
     <Link href={`/token/${mint}`} className="block" aria-label={`View ${name ?? symbol ?? mint} token details`}>
       <Card className="transition-shadow hover:shadow-md">
         <CardHeader className="pb-2">
-          <div className="flex items-start justify-between gap-2">
-            <CardTitle className="truncate text-base">
-              {name ?? "Unknown Token"}
-              {symbol && (
-                <span className="ml-1.5 text-sm font-normal text-muted-foreground">
-                  ${symbol}
-                </span>
-              )}
+          <div className="flex items-start justify-between gap-2 overflow-hidden">
+            <CardTitle className="min-w-0 text-base">
+              <span className="block truncate">
+                {name ?? "Unknown Token"}
+                {symbol && (
+                  <span className="ml-1.5 text-sm font-normal text-muted-foreground">
+                    ${symbol}
+                  </span>
+                )}
+              </span>
             </CardTitle>
             <Badge
               className={cn("shrink-0 border", trustBadge.className)}
