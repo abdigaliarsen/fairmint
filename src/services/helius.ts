@@ -283,6 +283,56 @@ export async function getWalletTransactions(
 }
 
 // ---------------------------------------------------------------------------
+// checkHolderConnections — basic Sybil detection
+// ---------------------------------------------------------------------------
+
+/**
+ * Check if any of the given wallets share recent transaction history.
+ *
+ * Fetches recent transaction signatures for each wallet and looks for
+ * overlapping signatures — meaning two wallets participated in the same
+ * on-chain transaction (e.g. direct SOL transfer, funding from the same
+ * source). This catches basic Sybil patterns where one entity controls
+ * multiple top-holder wallets.
+ *
+ * Returns the number of wallets that share at least one transaction with
+ * another wallet in the set.
+ */
+export async function checkHolderConnections(
+  wallets: string[],
+  txLimit: number = 50
+): Promise<number> {
+  if (wallets.length < 2) return 0;
+
+  // Fetch recent transaction signatures for each wallet in parallel
+  const results = await Promise.all(
+    wallets.map(async (wallet) => {
+      const txs = await getWalletTransactions(wallet, txLimit);
+      return {
+        wallet,
+        signatures: new Set(txs.map((tx) => tx.signature)),
+      };
+    })
+  );
+
+  // Find wallets that share at least one transaction with another top holder
+  const connectedWallets = new Set<string>();
+  for (let i = 0; i < results.length; i++) {
+    for (let j = i + 1; j < results.length; j++) {
+      for (const sig of results[i].signatures) {
+        if (results[j].signatures.has(sig)) {
+          connectedWallets.add(results[i].wallet);
+          connectedWallets.add(results[j].wallet);
+          break;
+        }
+      }
+    }
+  }
+
+  return connectedWallets.size;
+}
+
+// ---------------------------------------------------------------------------
 // identifyDeployer
 // ---------------------------------------------------------------------------
 

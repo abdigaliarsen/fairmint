@@ -20,6 +20,7 @@ import {
   getTokenHolders,
   identifyDeployer,
   analyzeHolders,
+  checkHolderConnections,
   type TokenMetadata,
   type TokenHolder,
   type LPVault,
@@ -138,7 +139,8 @@ function detectRiskFlags(
   deployerScore: number | null,
   deployerTier: FairScoreTier | null,
   holders: TokenHolder[],
-  metadata: TokenMetadata
+  metadata: TokenMetadata,
+  connectedHolderCount: number = 0
 ): RiskFlag[] {
   const flags: RiskFlag[] = [];
 
@@ -214,6 +216,25 @@ function detectRiskFlags(
         "low",
         "Active Freeze Authority",
         "The token has an active freeze authority, which can freeze holder accounts."
+      )
+    );
+  }
+
+  // 7. Connected wallets — basic Sybil detection
+  if (connectedHolderCount >= 4) {
+    flags.push(
+      makeRiskFlag(
+        "high",
+        "Connected Wallets",
+        `${connectedHolderCount} of the top holders share recent transaction history, suggesting coordinated control.`
+      )
+    );
+  } else if (connectedHolderCount >= 2) {
+    flags.push(
+      makeRiskFlag(
+        "medium",
+        "Connected Wallets",
+        `${connectedHolderCount} of the top holders share recent transaction history.`
       )
     );
   }
@@ -451,20 +472,25 @@ export async function analyzeToken(
   let deployerTier: FairScoreTier | null = deployerResult.tier;
   const deployerFeatures = deployerResult.features;
 
-  // 5. Fetch holder FairScores (quick scores for the top holders)
-  const holderScores = await Promise.all(
-    holders.slice(0, 10).map(async (holder) => {
-      const score = await getQuickScore(holder.owner);
-      return { owner: holder.owner, score };
-    })
-  );
+  // 5. Fetch holder FairScores + check wallet connections in parallel
+  const topHolderWallets = holderAnalysis.holders.slice(0, 5).map((h) => h.owner);
+  const [holderScores, connectedHolderCount] = await Promise.all([
+    Promise.all(
+      holders.slice(0, 10).map(async (holder) => {
+        const score = await getQuickScore(holder.owner);
+        return { owner: holder.owner, score };
+      })
+    ),
+    checkHolderConnections(topHolderWallets),
+  ]);
 
   // 6. Detect risk flags
   const riskFlags = detectRiskFlags(
     deployerScore,
     deployerTier,
     holders,
-    metadata
+    metadata,
+    connectedHolderCount
   );
 
   // 7. Calculate composite trust rating
