@@ -13,6 +13,7 @@ export function useAISummary({ type, context }: UseAISummaryOptions) {
 
   const { completion, isLoading, error, complete } = useCompletion({
     api: "/api/ai/summary",
+    streamProtocol: "text",
   });
 
   useEffect(() => {
