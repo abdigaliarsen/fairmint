@@ -17,6 +17,8 @@ export interface DiscoverToken {
   liquidity_usd?: number;
   price_usd?: number;
   market_cap?: number;
+  source?: string;
+  created_at?: string;
 }
 
 export type DiscoverTab = "trending" | "new" | "trusted";

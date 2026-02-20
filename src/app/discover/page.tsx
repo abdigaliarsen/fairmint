@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useDiscover, type DiscoverTab, type DiscoverToken } from "@/hooks/useDiscover";
+import { useNewTokenFeed } from "@/hooks/useNewTokenFeed";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -40,6 +41,24 @@ function truncateAddress(address: string): string {
   if (address.length <= 12) return address;
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
+
+function timeAgo(isoDate: string): string {
+  const seconds = Math.floor((Date.now() - new Date(isoDate).getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+const SOURCE_LABELS: Record<string, { label: string; className: string }> = {
+  jupiter: { label: "Jupiter", className: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400" },
+  dexscreener: { label: "DexScreener", className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
+  pumpfun_graduated: { label: "Pump.fun", className: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
+  helius_webhook: { label: "On-chain", className: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" },
+};
 
 // ---------------------------------------------------------------------------
 // Token Card for Discover
@@ -91,16 +110,29 @@ function DiscoverTokenCard({ token }: { token: DiscoverToken }) {
                   {token.deployer_tier}
                 </Badge>
               )}
+              {token.source && SOURCE_LABELS[token.source] && (
+                <Badge className={cn("text-xs", SOURCE_LABELS[token.source].className)}>
+                  {SOURCE_LABELS[token.source].label}
+                </Badge>
+              )}
             </div>
           </div>
 
           {/* Stats */}
           <div className="hidden flex-col items-end gap-1 sm:flex">
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Users className="size-3" />
-              {token.holder_count} holders
-            </div>
-            {token.token_age_days != null && (
+            {token.created_at && isUnanalyzed && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="size-3" />
+                {timeAgo(token.created_at)}
+              </div>
+            )}
+            {!isUnanalyzed && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Users className="size-3" />
+                {token.holder_count} holders
+              </div>
+            )}
+            {!isUnanalyzed && token.token_age_days != null && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock className="size-3" />
                 {token.token_age_days}d old
@@ -180,6 +212,56 @@ function TabContent({ tab }: { tab: DiscoverTab }) {
 }
 
 // ---------------------------------------------------------------------------
+// New Launches Content (Real-time via Supabase)
+// ---------------------------------------------------------------------------
+
+function NewLaunchesContent() {
+  const { tokens, loading, error, newCount, acknowledge } = useNewTokenFeed();
+
+  if (loading) return <DiscoverSkeleton />;
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <p className="text-sm text-muted-foreground">
+            Failed to load tokens. Please try again later.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (tokens.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <p className="text-sm text-muted-foreground">
+            No new tokens found yet. Tokens appear here in real-time.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {newCount > 0 && (
+        <button
+          onClick={acknowledge}
+          className="w-full rounded-lg bg-sky-50 px-4 py-2 text-center text-sm font-medium text-sky-700 transition-colors hover:bg-sky-100 dark:bg-sky-950/30 dark:text-sky-400 dark:hover:bg-sky-950/50"
+        >
+          {newCount} new token{newCount !== 1 ? "s" : ""} — click to see
+        </button>
+      )}
+      {tokens.map((token) => (
+        <DiscoverTokenCard key={token.mint} token={token} />
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Discover Page
 // ---------------------------------------------------------------------------
 
@@ -221,7 +303,7 @@ export default function DiscoverPage() {
           <TabContent tab="trending" />
         </TabsContent>
         <TabsContent value="new">
-          <TabContent tab="new" />
+          <NewLaunchesContent />
         </TabsContent>
         <TabsContent value="trusted">
           <TabContent tab="trusted" />
