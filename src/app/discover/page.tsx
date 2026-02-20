@@ -47,21 +47,28 @@ function truncateAddress(address: string): string {
 
 function DiscoverTokenCard({ token }: { token: DiscoverToken }) {
   const riskCount = token.risk_flags?.length ?? 0;
+  const isUnanalyzed = token.trust_rating === 0 && token.deployer_tier === null;
 
   return (
     <Link href={`/token/${token.mint}`}>
       <Card className="transition-shadow hover:shadow-md">
         <CardContent className="flex items-center gap-4 p-4">
-          {/* Trust Rating Circle */}
-          <div
-            className={cn(
-              "flex size-12 shrink-0 items-center justify-center rounded-full border text-lg font-bold",
-              getTrustBg(token.trust_rating),
-              getTrustColor(token.trust_rating)
-            )}
-          >
-            {token.trust_rating}
-          </div>
+          {/* Trust Rating Circle or NEW badge */}
+          {isUnanalyzed ? (
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-full border border-sky-300 bg-sky-50 text-xs font-bold text-sky-600 dark:border-sky-700 dark:bg-sky-950/30 dark:text-sky-400">
+              NEW
+            </div>
+          ) : (
+            <div
+              className={cn(
+                "flex size-12 shrink-0 items-center justify-center rounded-full border text-lg font-bold",
+                getTrustBg(token.trust_rating),
+                getTrustColor(token.trust_rating)
+              )}
+            >
+              {token.trust_rating}
+            </div>
+          )}
 
           {/* Token Info */}
           <div className="flex min-w-0 flex-1 flex-col gap-1">

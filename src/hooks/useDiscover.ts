@@ -13,7 +13,10 @@ export interface DiscoverToken {
   holder_count: number;
   token_age_days: number | null;
   risk_flags: RiskFlag[];
-  analyzed_at: string;
+  analyzed_at: string | null;
+  liquidity_usd?: number;
+  price_usd?: number;
+  market_cap?: number;
 }
 
 export type DiscoverTab = "trending" | "new" | "trusted";

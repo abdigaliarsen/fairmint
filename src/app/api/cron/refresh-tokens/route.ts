@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeToken } from "@/services/tokenAnalyzer";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { fetchRecentTokens } from "@/services/jupiter";
 
 /** Well-known Solana token mints to keep fresh. */
 const POPULAR_MINTS = [
@@ -86,9 +87,39 @@ export async function GET(request: NextRequest) {
   const succeeded = results.filter((r) => r.trustRating !== null).length;
   const failed = results.length - succeeded;
 
+  // Phase 2: Seed up to 5 unanalyzed recent tokens for gradual enrichment
+  let seeded = 0;
+  try {
+    const recentTokens = await fetchRecentTokens(20);
+    const recentMints = recentTokens.map((t) => t.mint);
+
+    if (recentMints.length > 0) {
+      const supabase = createServerSupabaseClient();
+      const { data: existing } = await supabase
+        .from("token_analyses")
+        .select("mint")
+        .in("mint", recentMints);
+
+      const existingSet = new Set((existing ?? []).map((r) => r.mint));
+      const newMints = recentMints.filter((m) => !existingSet.has(m));
+
+      for (const mint of newMints.slice(0, 5)) {
+        try {
+          await analyzeToken(mint);
+          seeded++;
+        } catch (error) {
+          console.error(`Failed to seed token ${mint}:`, error);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Phase 2 (seed new tokens) failed:", error);
+  }
+
   return NextResponse.json({
     refreshed: succeeded,
     failed,
+    seeded,
     total: allMints.length,
     popular: POPULAR_MINTS.length,
     stale: staleMints.length,

@@ -12,6 +12,15 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 // Types
 // ---------------------------------------------------------------------------
 
+export interface DexScreenerProfile {
+  url: string;
+  chainId: string;
+  tokenAddress: string;
+  icon?: string;
+  description?: string;
+  links?: Array<{ type: string; label: string; url: string }>;
+}
+
 export interface DexScreenerPair {
   chainId: string;
   dexId: string;
@@ -54,6 +63,14 @@ export interface TokenLiquidity {
 
 const DEXSCREENER_BASE_URL = "https://api.dexscreener.com/tokens/v1/solana";
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+// ---------------------------------------------------------------------------
+// Latest profiles cache (5 minutes)
+// ---------------------------------------------------------------------------
+
+let profilesCache: DexScreenerProfile[] | null = null;
+let profilesCachedAt = 0;
+const PROFILES_CACHE_TTL_MS = 5 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Fetch + Cache
@@ -141,5 +158,45 @@ export async function getTokenLiquidity(
   } catch (error) {
     console.error(`DexScreener fetch failed for ${mint}:`, error);
     return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Latest token profiles
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch the latest token profiles from DexScreener, filtered to Solana.
+ * No API key required. Returns up to `limit` profiles.
+ */
+export async function fetchLatestProfiles(
+  limit: number = 20
+): Promise<DexScreenerProfile[]> {
+  try {
+    const now = Date.now();
+    if (profilesCache && now - profilesCachedAt < PROFILES_CACHE_TTL_MS) {
+      return profilesCache.slice(0, limit);
+    }
+
+    const res = await fetch(
+      "https://api.dexscreener.com/token-profiles/latest/v1",
+      { signal: AbortSignal.timeout(10_000) }
+    );
+
+    if (!res.ok) {
+      console.error(`DexScreener profiles API returned ${res.status}`);
+      return [];
+    }
+
+    const profiles = (await res.json()) as DexScreenerProfile[];
+    const solanaProfiles = profiles.filter((p) => p.chainId === "solana");
+
+    profilesCache = solanaProfiles;
+    profilesCachedAt = now;
+
+    return solanaProfiles.slice(0, limit);
+  } catch (error) {
+    console.error("Failed to fetch latest profiles from DexScreener:", error);
+    return [];
   }
 }
