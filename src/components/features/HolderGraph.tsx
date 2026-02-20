@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -32,6 +32,9 @@ export default function HolderGraph({
   loading,
 }: HolderGraphProps) {
   const router = useRouter();
+  const [hoveredOwner, setHoveredOwner] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const nodes = useMemo(() => {
     if (holders.length === 0) return [];
 
@@ -66,8 +69,10 @@ export default function HolderGraph({
     );
   }
 
+  const hoveredNode = nodes.find((n) => n.owner === hoveredOwner);
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="relative flex flex-col gap-4" ref={containerRef}>
       <svg
         viewBox="0 0 400 400"
         className="mx-auto w-full max-w-[400px]"
@@ -83,8 +88,9 @@ export default function HolderGraph({
             x2={node.cx}
             y2={node.cy}
             stroke="currentColor"
-            strokeOpacity={0.1}
-            strokeWidth={1}
+            strokeOpacity={hoveredOwner === node.owner ? 0.3 : 0.1}
+            strokeWidth={hoveredOwner === node.owner ? 2 : 1}
+            className="transition-all duration-200"
           />
         ))}
 
@@ -123,6 +129,10 @@ export default function HolderGraph({
                 router.push(`/reputation/${node.owner}`);
               }
             }}
+            onMouseEnter={() => setHoveredOwner(node.owner)}
+            onMouseLeave={() => setHoveredOwner(null)}
+            onFocus={() => setHoveredOwner(node.owner)}
+            onBlur={() => setHoveredOwner(null)}
           >
             {/* Hover ring */}
             <circle
@@ -166,6 +176,47 @@ export default function HolderGraph({
           </g>
         ))}
       </svg>
+
+      {/* Hover tooltip */}
+      {hoveredNode && (
+        <div
+          className="pointer-events-none absolute z-10 w-48 rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-md"
+          style={{
+            left: `${(hoveredNode.cx / 400) * 100}%`,
+            top: `${(hoveredNode.cy / 400) * 100}%`,
+            transform:
+              hoveredNode.cx > 200
+                ? "translate(-110%, -50%)"
+                : "translate(10%, -50%)",
+          }}
+        >
+          <div className="mb-1.5 font-mono text-xs font-semibold">
+            {hoveredNode.truncAddr}
+          </div>
+          <div className="flex flex-col gap-1 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Holding</span>
+              <span className="font-medium">{hoveredNode.percentage.toFixed(1)}%</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Tier</span>
+              <span className="flex items-center gap-1.5">
+                <span
+                  className="inline-block size-2 rounded-full"
+                  style={{ backgroundColor: hoveredNode.fill }}
+                />
+                <span className="font-medium capitalize">{hoveredNode.tier}</span>
+              </span>
+            </div>
+            {hoveredNode.fairScore !== null && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">FairScore</span>
+                <span className="font-medium">{hoveredNode.fairScore}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Tier legend */}
       <div

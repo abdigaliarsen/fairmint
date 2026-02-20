@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
-import type { FairScoreTier } from "@/types/database";
+import type { FairScoreTier, RiskFlag } from "@/types/database";
 
 export interface TokenNode {
   mint: string;
@@ -13,6 +13,7 @@ export interface TokenNode {
   symbol: string | null;
   trustRating: number;
   deployerTier: FairScoreTier | null;
+  riskFlags?: RiskFlag[];
 }
 
 interface TokenGraphProps {
@@ -30,10 +31,30 @@ const TIER_FILL: Record<FairScoreTier, string> = {
   unrated: "#9ca3af",
 };
 
+const SEVERITY_COLOR: Record<string, string> = {
+  critical: "text-red-600",
+  high: "text-red-500",
+  medium: "text-yellow-600",
+  low: "text-slate-500",
+};
+
+const SEVERITY_DOT: Record<string, string> = {
+  critical: "bg-red-600",
+  high: "bg-red-500",
+  medium: "bg-yellow-600",
+  low: "bg-slate-400",
+};
+
 function ratingColor(rating: number): string {
   if (rating >= 60) return "#059669"; // emerald-600
   if (rating >= 30) return "#ca8a04"; // yellow-600
   return "#dc2626"; // red-600
+}
+
+function ratingLabel(rating: number): string {
+  if (rating >= 60) return "Trusted";
+  if (rating >= 30) return "Caution";
+  return "Risky";
 }
 
 const CENTER_X = 200;
@@ -47,6 +68,8 @@ export default function TokenGraph({
   loading,
 }: TokenGraphProps) {
   const router = useRouter();
+  const [hoveredMint, setHoveredMint] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const nodes = useMemo(() => {
     if (tokens.length === 0) return [];
@@ -82,9 +105,10 @@ export default function TokenGraph({
   }
 
   const centerFill = TIER_FILL[walletTier] || TIER_FILL.unrated;
+  const hoveredNode = nodes.find((n) => n.mint === hoveredMint);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="relative flex flex-col gap-4" ref={containerRef}>
       <svg
         viewBox="0 0 400 400"
         className="mx-auto w-full max-w-[400px]"
@@ -100,8 +124,9 @@ export default function TokenGraph({
             x2={node.cx}
             y2={node.cy}
             stroke="currentColor"
-            strokeOpacity={0.1}
-            strokeWidth={1}
+            strokeOpacity={hoveredMint === node.mint ? 0.3 : 0.1}
+            strokeWidth={hoveredMint === node.mint ? 2 : 1}
+            className="transition-all duration-200"
           />
         ))}
 
@@ -140,6 +165,10 @@ export default function TokenGraph({
                 router.push(`/token/${node.mint}`);
               }
             }}
+            onMouseEnter={() => setHoveredMint(node.mint)}
+            onMouseLeave={() => setHoveredMint(null)}
+            onFocus={() => setHoveredMint(node.mint)}
+            onBlur={() => setHoveredMint(null)}
           >
             {/* Hover ring */}
             <circle
@@ -183,6 +212,56 @@ export default function TokenGraph({
           </g>
         ))}
       </svg>
+
+      {/* Hover tooltip */}
+      {hoveredNode && (
+        <div
+          className="pointer-events-none absolute z-10 w-56 rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-md"
+          style={{
+            left: `${(hoveredNode.cx / 400) * 100}%`,
+            top: `${(hoveredNode.cy / 400) * 100}%`,
+            transform:
+              hoveredNode.cx > 200
+                ? "translate(-110%, -50%)"
+                : "translate(10%, -50%)",
+          }}
+        >
+          <div className="mb-1.5 text-sm font-semibold">
+            {hoveredNode.name ?? hoveredNode.symbol ?? hoveredNode.mint.slice(0, 8)}
+          </div>
+          <div className="mb-2 flex items-center gap-2 text-xs">
+            <span
+              className="inline-block size-2 rounded-full"
+              style={{ backgroundColor: hoveredNode.color }}
+            />
+            <span>
+              Trust: {hoveredNode.trustRating} ({ratingLabel(hoveredNode.trustRating)})
+            </span>
+          </div>
+          {hoveredNode.riskFlags && hoveredNode.riskFlags.length > 0 ? (
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Risk Flags
+              </span>
+              {hoveredNode.riskFlags.map((flag) => (
+                <div key={flag.id} className="flex items-start gap-1.5 text-xs">
+                  <span
+                    className={cn(
+                      "mt-1 inline-block size-1.5 shrink-0 rounded-full",
+                      SEVERITY_DOT[flag.severity] ?? "bg-slate-400"
+                    )}
+                  />
+                  <span className={SEVERITY_COLOR[flag.severity] ?? "text-slate-500"}>
+                    {flag.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-xs text-emerald-600">No risk flags detected</div>
+          )}
+        </div>
+      )}
 
       {/* Legend */}
       <div

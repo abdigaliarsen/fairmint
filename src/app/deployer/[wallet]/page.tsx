@@ -322,6 +322,7 @@ export default function DeployerPage() {
                     symbol: t.symbol,
                     trustRating: t.trust_rating,
                     deployerTier: t.deployer_tier,
+                    riskFlags: t.risk_flags ?? [],
                   }))}
                   walletLabel={truncateAddress(data.wallet)}
                   walletTier={data.fairScore?.tier ?? "unrated"}

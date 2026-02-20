@@ -44,7 +44,7 @@ export async function GET(
     const { data: deployedTokens, error: dbError } = await supabase
       .from("token_analyses")
       .select(
-        "mint, name, symbol, image_url, trust_rating, deployer_score, deployer_tier, holder_count, analyzed_at"
+        "mint, name, symbol, image_url, trust_rating, deployer_score, deployer_tier, holder_count, analyzed_at, risk_flags"
       )
       .eq("deployer_wallet", walletAddress)
       .order("analyzed_at", { ascending: false });

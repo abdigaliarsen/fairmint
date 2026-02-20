@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { FairScoreTier, Badge, FairScaleAction } from "@/types/database";
+import type { FairScoreTier, Badge, FairScaleAction, RiskFlag } from "@/types/database";
 import type { Recommendation } from "@/lib/recommendations";
 
 // ---------------------------------------------------------------------------
@@ -18,6 +18,7 @@ interface DeployedToken {
   deployer_tier: FairScoreTier | null;
   holder_count: number;
   analyzed_at: string;
+  risk_flags: RiskFlag[] | null;
 }
 
 interface FairScoreInfo {
