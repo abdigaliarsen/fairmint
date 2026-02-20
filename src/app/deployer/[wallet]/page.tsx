@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ArrowLeft,
   Copy,
@@ -29,6 +29,7 @@ import AISummaryCard from "@/components/features/AISummaryCard";
 import ScoreHistoryChart from "@/components/features/ScoreHistoryChart";
 import WalletAnalyticsChart from "@/components/features/WalletAnalyticsChart";
 import { useDeployerProfile } from "@/hooks/useDeployerProfile";
+import { useBrowsingHistory } from "@/hooks/useBrowsingHistory";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
 import type { FairScoreTier } from "@/types/database";
@@ -140,6 +141,21 @@ export default function DeployerPage() {
   const router = useRouter();
   const wallet = params.wallet;
   const { data, loading, error, refetch } = useDeployerProfile(wallet);
+  const { recordVisit } = useBrowsingHistory();
+
+  useEffect(() => {
+    if (data && !loading) {
+      recordVisit({
+        type: "deployer",
+        subject: data.wallet,
+        name: null,
+        symbol: null,
+        score: data.fairScore?.score ?? null,
+        tier: data.fairScore?.tier ?? null,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, loading]);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">

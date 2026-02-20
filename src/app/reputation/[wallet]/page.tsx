@@ -19,6 +19,7 @@ import ScoreRecommendations from "@/components/features/ScoreRecommendations";
 import AISummaryCard from "@/components/features/AISummaryCard";
 import ScoreHistoryChart from "@/components/features/ScoreHistoryChart";
 import WalletAnalyticsChart from "@/components/features/WalletAnalyticsChart";
+import { useBrowsingHistory } from "@/hooks/useBrowsingHistory";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
 import type { FairScoreData, FairScoreTier } from "@/types/database";
@@ -77,6 +78,7 @@ export default function ReputationPage() {
   const [data, setData] = useState<ReputationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { recordVisit } = useBrowsingHistory();
 
   useEffect(() => {
     if (!wallet) return;
@@ -93,6 +95,20 @@ export default function ReputationPage() {
       .catch(() => setError("Failed to load wallet reputation."))
       .finally(() => setLoading(false));
   }, [wallet]);
+
+  useEffect(() => {
+    if (data && !loading) {
+      recordVisit({
+        type: "reputation",
+        subject: wallet,
+        name: null,
+        symbol: null,
+        score: data.fairScore?.decimalScore ?? null,
+        tier: data.fairScore?.tier ?? null,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, loading]);
 
   const truncated = wallet
     ? `${wallet.slice(0, 6)}...${wallet.slice(-4)}`

@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -33,6 +33,7 @@ import LiquidityCard from "@/components/features/LiquidityCard";
 import { useTokenAnalysis } from "@/hooks/useTokenAnalysis";
 import { useHolders } from "@/hooks/useHolders";
 import { generateTokenTips } from "@/lib/recommendations";
+import { useBrowsingHistory } from "@/hooks/useBrowsingHistory";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -147,6 +148,21 @@ export default function TokenPage() {
   const mint = params.mint;
   const { data, loading, error, refetch } = useTokenAnalysis(mint);
   const { holders, loading: holdersLoading } = useHolders(mint, 10);
+  const { recordVisit } = useBrowsingHistory();
+
+  useEffect(() => {
+    if (data && !loading) {
+      recordVisit({
+        type: "token",
+        subject: data.mint,
+        name: data.name ?? null,
+        symbol: data.symbol ?? null,
+        score: data.trustRating,
+        tier: data.deployerTier ?? null,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, loading]);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
