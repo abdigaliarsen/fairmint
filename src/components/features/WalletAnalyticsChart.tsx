@@ -33,22 +33,30 @@ export default function WalletAnalyticsChart({
 }: WalletAnalyticsChartProps) {
   if (!features) return null;
 
+  // FairScale percentiles may be 0-1 or 0-100 depending on the wallet.
+  // Normalize: if > 1, treat as already 0-100; if <= 1, scale to 0-100.
+  function pct(v: number | undefined): number {
+    const raw = v ?? 0;
+    const scaled = raw > 1 ? raw : raw * 100;
+    return Math.min(100, Math.round(scaled));
+  }
+
   const radarData = [
     {
       metric: "SOL Balance",
-      value: Math.round((features.native_sol_percentile ?? 0) * 100),
+      value: pct(features.native_sol_percentile),
     },
     {
       metric: "Major Tokens",
-      value: Math.round((features.major_percentile_score ?? 0) * 100),
+      value: pct(features.major_percentile_score),
     },
     {
       metric: "Stablecoins",
-      value: Math.round((features.stable_percentile_score ?? 0) * 100),
+      value: pct(features.stable_percentile_score),
     },
     {
       metric: "Liquid Staking",
-      value: Math.round((features.lst_percentile_score ?? 0) * 100),
+      value: pct(features.lst_percentile_score),
     },
     {
       metric: "Activity",
