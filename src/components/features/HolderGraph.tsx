@@ -112,7 +112,7 @@ export default function HolderGraph({
         {nodes.map((node) => (
           <g
             key={node.owner}
-            className="cursor-pointer"
+            className="cursor-pointer [&:hover_circle:first-child]:fill-opacity-20 [&:focus_circle:first-child]:fill-opacity-20"
             role="link"
             tabIndex={0}
             aria-label={`View reputation for ${node.truncAddr}`}
@@ -124,6 +124,15 @@ export default function HolderGraph({
               }
             }}
           >
+            {/* Hover ring */}
+            <circle
+              cx={node.cx}
+              cy={node.cy}
+              r={node.r + 5}
+              fill={node.fill}
+              fillOpacity={0}
+              className="transition-all duration-200"
+            />
             <circle
               cx={node.cx}
               cy={node.cy}
@@ -133,7 +142,6 @@ export default function HolderGraph({
               stroke={node.fill}
               strokeWidth={2}
               strokeOpacity={0.3}
-              className="transition-opacity hover:opacity-70"
             />
             <text
               x={node.cx}
@@ -142,7 +150,6 @@ export default function HolderGraph({
               fill="currentColor"
               className="text-muted-foreground"
               fontSize={9}
-              style={{ textDecoration: "underline" }}
             >
               {node.truncAddr}
             </text>

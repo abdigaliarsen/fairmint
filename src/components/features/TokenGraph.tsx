@@ -129,7 +129,7 @@ export default function TokenGraph({
         {nodes.map((node) => (
           <g
             key={node.mint}
-            className="cursor-pointer"
+            className="cursor-pointer [&:hover_circle:first-child]:fill-opacity-20 [&:focus_circle:first-child]:fill-opacity-20"
             role="link"
             tabIndex={0}
             aria-label={`View ${node.name ?? node.symbol ?? node.mint} token`}
@@ -141,6 +141,15 @@ export default function TokenGraph({
               }
             }}
           >
+            {/* Hover ring */}
+            <circle
+              cx={node.cx}
+              cy={node.cy}
+              r={node.r + 5}
+              fill={node.color}
+              fillOpacity={0}
+              className="transition-all duration-200"
+            />
             <circle
               cx={node.cx}
               cy={node.cy}
@@ -150,7 +159,6 @@ export default function TokenGraph({
               stroke={node.color}
               strokeWidth={2}
               strokeOpacity={0.3}
-              className="transition-opacity hover:opacity-70"
             />
             <text
               x={node.cx}
@@ -159,7 +167,6 @@ export default function TokenGraph({
               fill="currentColor"
               className="text-muted-foreground"
               fontSize={9}
-              style={{ textDecoration: "underline" }}
             >
               {node.label}
             </text>
