@@ -1,4 +1,8 @@
 import posthog from "posthog-js";
+import * as Sentry from "@sentry/nextjs";
+
+// Sentry navigation instrumentation
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
 
 if (
   typeof window !== "undefined" &&
