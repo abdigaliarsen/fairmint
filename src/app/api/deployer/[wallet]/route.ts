@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getFullScore } from "@/services/fairscale";
+import { generateRecommendations } from "@/lib/recommendations";
 
 const paramSchema = z.object({
   wallet: z
@@ -52,6 +53,12 @@ export async function GET(
       console.error("Supabase query error:", dbError);
     }
 
+    const recommendations = generateRecommendations(
+      scoreData,
+      undefined,
+      scoreData?.tier
+    );
+
     return NextResponse.json({
       wallet: walletAddress,
       fairScore: scoreData
@@ -60,9 +67,11 @@ export async function GET(
             integerScore: scoreData.integerScore,
             tier: scoreData.tier,
             badges: scoreData.badges,
+            actions: scoreData.actions,
             updatedAt: scoreData.updatedAt,
           }
         : null,
+      recommendations,
       deployedTokens: deployedTokens ?? [],
       tokenCount: deployedTokens?.length ?? 0,
     });

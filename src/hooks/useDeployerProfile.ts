@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { FairScoreTier, Badge } from "@/types/database";
+import type { FairScoreTier, Badge, FairScaleAction } from "@/types/database";
+import type { Recommendation } from "@/lib/recommendations";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -24,12 +25,14 @@ interface FairScoreInfo {
   integerScore: number;
   tier: FairScoreTier;
   badges: Badge[];
+  actions?: FairScaleAction[];
   updatedAt: string;
 }
 
 export interface DeployerProfile {
   wallet: string;
   fairScore: FairScoreInfo | null;
+  recommendations: Recommendation[];
   deployedTokens: DeployedToken[];
   tokenCount: number;
 }

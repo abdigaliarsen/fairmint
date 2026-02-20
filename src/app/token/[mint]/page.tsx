@@ -26,8 +26,10 @@ import TrustRating from "@/components/features/TrustRating";
 import HolderQualityBar from "@/components/features/HolderQualityBar";
 import RiskFlags from "@/components/features/RiskFlags";
 import HolderGraph from "@/components/features/HolderGraph";
+import ScoreRecommendations from "@/components/features/ScoreRecommendations";
 import { useTokenAnalysis } from "@/hooks/useTokenAnalysis";
 import { useHolders } from "@/hooks/useHolders";
+import { generateTokenTips } from "@/lib/recommendations";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -333,6 +335,11 @@ export default function TokenPage() {
               <RiskFlags flags={data.riskFlags} />
             </CardContent>
           </Card>
+
+          {/* --------------------------------------------------------------- */}
+          {/* Trust Improvement Tips                                          */}
+          {/* --------------------------------------------------------------- */}
+          <ScoreRecommendations recommendations={generateTokenTips(data)} />
 
           {/* --------------------------------------------------------------- */}
           {/* Analysis Metadata                                               */}

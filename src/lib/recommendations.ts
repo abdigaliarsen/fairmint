@@ -171,6 +171,110 @@ export function generateRecommendations(
   return applyTierLimit(recs, effectiveTier);
 }
 
+/**
+ * Generate actionable tips for a specific token based on its trust analysis.
+ * These help deployers improve their token's trust rating and help investors
+ * understand what would make the token more trustworthy.
+ */
+export function generateTokenTips(analysis: TrustAnalysis): Recommendation[] {
+  const tips: Recommendation[] = [];
+
+  // Deployer reputation
+  if (analysis.deployerScore === null) {
+    tips.push({
+      id: "deployer-unrated",
+      priority: "medium",
+      title: "Deployer has no reputation",
+      description:
+        "The deployer wallet has no FairScale history. Building on-chain activity and connecting socials on FairScale would improve this token's trust rating.",
+      category: "score",
+    });
+  } else if (analysis.deployerScore < 300) {
+    tips.push({
+      id: "deployer-low",
+      priority: "medium",
+      title: "Build deployer reputation",
+      description:
+        `The deployer has a FairScale score of ${analysis.deployerScore}. Increasing DeFi activity, staking SOL, and connecting socials would boost the token's trust rating.`,
+      category: "score",
+    });
+  }
+
+  // Holder concentration
+  if (analysis.topHolderConcentration > 50) {
+    tips.push({
+      id: "distribution",
+      priority: analysis.topHolderConcentration > 80 ? "high" : "medium",
+      title: "Improve token distribution",
+      description:
+        `The top holder owns ${analysis.topHolderConcentration.toFixed(1)}% of sampled supply. Broader distribution across more wallets would significantly improve trust.`,
+      category: "distribution",
+    });
+  }
+
+  // Holder quality
+  if (analysis.holderQualityScore < 40) {
+    tips.push({
+      id: "holder-quality",
+      priority: "medium",
+      title: "Attract reputable holders",
+      description:
+        "The average holder reputation is low. Attracting holders with established FairScale profiles would improve the token's credibility.",
+      category: "score",
+    });
+  }
+
+  // Mint authority
+  if (analysis.riskFlags.some((f) => f.label === "Active Mint Authority")) {
+    tips.push({
+      id: "mint-authority",
+      priority: "medium",
+      title: "Renounce mint authority",
+      description:
+        "The token still has an active mint authority. Renouncing it signals commitment to a fixed supply and removes a risk flag.",
+      category: "authority",
+    });
+  }
+
+  // Freeze authority
+  if (analysis.riskFlags.some((f) => f.label === "Active Freeze Authority")) {
+    tips.push({
+      id: "freeze-authority",
+      priority: "low",
+      title: "Renounce freeze authority",
+      description:
+        "The token has an active freeze authority. Removing it builds holder confidence by ensuring accounts can't be frozen.",
+      category: "authority",
+    });
+  }
+
+  // Low holder count
+  if (analysis.holderCount < 10) {
+    tips.push({
+      id: "low-holders",
+      priority: "medium",
+      title: "Grow holder base",
+      description:
+        `Only ${analysis.holderCount} holders detected. A larger, more diverse holder base signals organic demand and improves trust.`,
+      category: "distribution",
+    });
+  }
+
+  // Overall trust rating
+  if (analysis.trustRating >= 60) {
+    tips.push({
+      id: "good-standing",
+      priority: "low",
+      title: "Token is in good standing",
+      description:
+        "This token has a solid trust rating. Maintaining deployer activity and broad distribution will keep it trusted.",
+      category: "score",
+    });
+  }
+
+  return tips;
+}
+
 function applyTierLimit(recs: Recommendation[], tier: string): Recommendation[] {
   const tierOrder: Record<string, number> = {
     unrated: -1,

@@ -23,6 +23,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import FairScoreDisplay from "@/components/features/FairScoreDisplay";
 import TokenCard from "@/components/features/TokenCard";
+import ScoreRecommendations from "@/components/features/ScoreRecommendations";
 import { useDeployerProfile } from "@/hooks/useDeployerProfile";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
@@ -292,6 +293,13 @@ export default function DeployerPage() {
               />
             </div>
           </section>
+
+          {/* --------------------------------------------------------------- */}
+          {/* Improvement Tips                                                */}
+          {/* --------------------------------------------------------------- */}
+          {data.recommendations && data.recommendations.length > 0 && (
+            <ScoreRecommendations recommendations={data.recommendations} />
+          )}
 
           {/* --------------------------------------------------------------- */}
           {/* Deployed Tokens                                                 */}
