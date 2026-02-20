@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { analyzeToken } from "@/services/tokenAnalyzer";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { fetchRecentTokens } from "@/services/jupiter";
+import { fetchLatestProfiles } from "@/services/dexscreener";
 
 /** Well-known Solana token mints to keep fresh. */
 const POPULAR_MINTS = [
@@ -87,39 +88,103 @@ export async function GET(request: NextRequest) {
   const succeeded = results.filter((r) => r.trustRating !== null).length;
   const failed = results.length - succeeded;
 
-  // Phase 2: Seed up to 5 unanalyzed recent tokens for gradual enrichment
-  let seeded = 0;
+  // Phase 2: Ingest new tokens from Jupiter + DexScreener into new_token_events
+  let ingested = 0;
   try {
-    const recentTokens = await fetchRecentTokens(20);
-    const recentMints = recentTokens.map((t) => t.mint);
+    const [jupiterTokens, dexProfiles] = await Promise.all([
+      fetchRecentTokens(20),
+      fetchLatestProfiles(20),
+    ]);
 
-    if (recentMints.length > 0) {
-      const supabase = createServerSupabaseClient();
-      const { data: existing } = await supabase
-        .from("token_analyses")
-        .select("mint")
-        .in("mint", recentMints);
+    const supabase = createServerSupabaseClient();
+    const tokens: Array<{ mint: string; name: string | null; symbol: string | null; image_url: string | null; source: string }> = [];
 
-      const existingSet = new Set((existing ?? []).map((r) => r.mint));
-      const newMints = recentMints.filter((m) => !existingSet.has(m));
+    for (const t of jupiterTokens) {
+      tokens.push({
+        mint: t.mint,
+        name: t.name ?? null,
+        symbol: t.symbol ?? null,
+        image_url: t.logoURI ?? null,
+        source: "jupiter",
+      });
+    }
 
-      for (const mint of newMints.slice(0, 5)) {
-        try {
-          await analyzeToken(mint);
-          seeded++;
-        } catch (error) {
-          console.error(`Failed to seed token ${mint}:`, error);
+    for (const p of dexProfiles) {
+      if (!tokens.some((t) => t.mint === p.tokenAddress)) {
+        tokens.push({
+          mint: p.tokenAddress,
+          name: null,
+          symbol: null,
+          image_url: p.icon ?? null,
+          source: "dexscreener",
+        });
+      }
+    }
+
+    for (const token of tokens) {
+      const { error } = await supabase
+        .from("new_token_events")
+        .upsert(
+          {
+            mint: token.mint,
+            name: token.name,
+            symbol: token.symbol,
+            image_url: token.image_url,
+            source: token.source,
+            metadata: {},
+            analyzed: false,
+            trust_rating: 0,
+            deployer_tier: null,
+          },
+          { onConflict: "mint", ignoreDuplicates: true }
+        );
+      if (!error) ingested++;
+    }
+  } catch (error) {
+    console.error("Phase 2 (ingest new tokens) failed:", error);
+  }
+
+  // Phase 3: Enrich unanalyzed tokens in new_token_events with full trust analysis
+  let enriched = 0;
+  try {
+    const supabase = createServerSupabaseClient();
+    const { data: unanalyzed } = await supabase
+      .from("new_token_events")
+      .select("mint")
+      .eq("analyzed", false)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    for (const row of unanalyzed ?? []) {
+      try {
+        const analysis = await analyzeToken(row.mint);
+        if (analysis) {
+          await supabase
+            .from("new_token_events")
+            .update({
+              analyzed: true,
+              trust_rating: analysis.trustRating,
+              deployer_tier: analysis.deployerTier ?? null,
+              name: analysis.name ?? undefined,
+              symbol: analysis.symbol ?? undefined,
+              image_url: analysis.imageUrl ?? undefined,
+            })
+            .eq("mint", row.mint);
+          enriched++;
         }
+      } catch (error) {
+        console.error(`Failed to enrich token ${row.mint}:`, error);
       }
     }
   } catch (error) {
-    console.error("Phase 2 (seed new tokens) failed:", error);
+    console.error("Phase 3 (enrich new tokens) failed:", error);
   }
 
   return NextResponse.json({
     refreshed: succeeded,
     failed,
-    seeded,
+    ingested,
+    enriched,
     total: allMints.length,
     popular: POPULAR_MINTS.length,
     stale: staleMints.length,
