@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -32,17 +32,10 @@ const TIER_FILL: Record<FairScoreTier, string> = {
 };
 
 const SEVERITY_COLOR: Record<string, string> = {
-  critical: "text-red-600",
-  high: "text-red-500",
-  medium: "text-yellow-600",
-  low: "text-slate-500",
-};
-
-const SEVERITY_DOT: Record<string, string> = {
-  critical: "bg-red-600",
-  high: "bg-red-500",
-  medium: "bg-yellow-600",
-  low: "bg-slate-400",
+  critical: "#dc2626",
+  high: "#ef4444",
+  medium: "#ca8a04",
+  low: "#64748b",
 };
 
 function ratingColor(rating: number): string {
@@ -60,6 +53,9 @@ function ratingLabel(rating: number): string {
 const CENTER_X = 200;
 const CENTER_Y = 200;
 const ORBIT_RADIUS = 130;
+const TOOLTIP_W = 170;
+const TOOLTIP_BASE_H = 55;
+const TOOLTIP_FLAG_H = 14;
 
 export default function TokenGraph({
   tokens,
@@ -69,7 +65,6 @@ export default function TokenGraph({
 }: TokenGraphProps) {
   const router = useRouter();
   const [hoveredMint, setHoveredMint] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const nodes = useMemo(() => {
     if (tokens.length === 0) return [];
@@ -107,13 +102,22 @@ export default function TokenGraph({
   const centerFill = TIER_FILL[walletTier] || TIER_FILL.unrated;
   const hoveredNode = nodes.find((n) => n.mint === hoveredMint);
 
+  function tooltipPos(node: (typeof nodes)[number]) {
+    const flagCount = node.riskFlags?.length ?? 0;
+    const h = TOOLTIP_BASE_H + flagCount * TOOLTIP_FLAG_H;
+    const tx = node.cx > CENTER_X ? node.cx - TOOLTIP_W - 10 : node.cx + 10;
+    const ty = node.cy - h / 2;
+    return { tx, ty, h };
+  }
+
   return (
-    <div className="relative flex flex-col gap-4" ref={containerRef}>
+    <div className="flex flex-col gap-4">
       <svg
         viewBox="0 0 400 400"
         className="mx-auto w-full max-w-[400px]"
         role="img"
         aria-label={`Token network for deployer ${walletLabel}`}
+        style={{ overflow: "visible" }}
       >
         {/* Lines from center to each token node */}
         {nodes.map((node) => (
@@ -211,57 +215,68 @@ export default function TokenGraph({
             </text>
           </g>
         ))}
-      </svg>
 
-      {/* Hover tooltip */}
-      {hoveredNode && (
-        <div
-          className="pointer-events-none absolute z-10 w-56 rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-md"
-          style={{
-            left: `${(hoveredNode.cx / 400) * 100}%`,
-            top: `${(hoveredNode.cy / 400) * 100}%`,
-            transform:
-              hoveredNode.cx > 200
-                ? "translate(-110%, -50%)"
-                : "translate(10%, -50%)",
-          }}
-        >
-          <div className="mb-1.5 text-sm font-semibold">
-            {hoveredNode.name ?? hoveredNode.symbol ?? hoveredNode.mint.slice(0, 8)}
-          </div>
-          <div className="mb-2 flex items-center gap-2 text-xs">
-            <span
-              className="inline-block size-2 rounded-full"
-              style={{ backgroundColor: hoveredNode.color }}
-            />
-            <span>
-              Trust: {hoveredNode.trustRating} ({ratingLabel(hoveredNode.trustRating)})
-            </span>
-          </div>
-          {hoveredNode.riskFlags && hoveredNode.riskFlags.length > 0 ? (
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                Risk Flags
-              </span>
-              {hoveredNode.riskFlags.map((flag) => (
-                <div key={flag.id} className="flex items-start gap-1.5 text-xs">
+        {/* Hover tooltip rendered inside SVG via foreignObject */}
+        {hoveredNode && (() => {
+          const { tx, ty, h } = tooltipPos(hoveredNode);
+          return (
+            <foreignObject
+              x={tx}
+              y={ty}
+              width={TOOLTIP_W}
+              height={h}
+              style={{ pointerEvents: "none", overflow: "visible" }}
+            >
+              <div
+                className="rounded-md border border-border bg-popover p-2 text-popover-foreground shadow-md"
+                style={{ fontSize: 11 }}
+              >
+                <div className="mb-1 text-xs font-semibold">
+                  {hoveredNode.name ?? hoveredNode.symbol ?? hoveredNode.mint.slice(0, 8)}
+                </div>
+                <div className="mb-1 flex items-center gap-1.5" style={{ fontSize: 10 }}>
                   <span
-                    className={cn(
-                      "mt-1 inline-block size-1.5 shrink-0 rounded-full",
-                      SEVERITY_DOT[flag.severity] ?? "bg-slate-400"
-                    )}
+                    className="inline-block size-1.5 rounded-full"
+                    style={{ backgroundColor: hoveredNode.color }}
                   />
-                  <span className={SEVERITY_COLOR[flag.severity] ?? "text-slate-500"}>
-                    {flag.label}
+                  <span>
+                    Trust: {hoveredNode.trustRating} ({ratingLabel(hoveredNode.trustRating)})
                   </span>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-xs text-emerald-600">No risk flags detected</div>
-          )}
-        </div>
-      )}
+                {hoveredNode.riskFlags && hoveredNode.riskFlags.length > 0 ? (
+                  <div className="flex flex-col gap-0.5">
+                    <span
+                      className="text-muted-foreground"
+                      style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" }}
+                    >
+                      Risk Flags
+                    </span>
+                    {hoveredNode.riskFlags.map((flag) => (
+                      <div
+                        key={flag.id}
+                        className="flex items-center gap-1"
+                        style={{ fontSize: 10 }}
+                      >
+                        <span
+                          className="inline-block size-1.5 shrink-0 rounded-full"
+                          style={{ backgroundColor: SEVERITY_COLOR[flag.severity] ?? "#64748b" }}
+                        />
+                        <span style={{ color: SEVERITY_COLOR[flag.severity] ?? "#64748b" }}>
+                          {flag.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 10, color: "#059669" }}>
+                    No risk flags detected
+                  </div>
+                )}
+              </div>
+            </foreignObject>
+          );
+        })()}
+      </svg>
 
       {/* Legend */}
       <div

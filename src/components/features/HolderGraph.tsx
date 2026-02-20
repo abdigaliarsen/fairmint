@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,8 @@ const TIER_FILL: Record<FairScoreTier, string> = {
 const CENTER_X = 200;
 const CENTER_Y = 200;
 const ORBIT_RADIUS = 130;
+const TOOLTIP_W = 150;
+const TOOLTIP_H = 80;
 
 export default function HolderGraph({
   holders,
@@ -33,7 +35,6 @@ export default function HolderGraph({
 }: HolderGraphProps) {
   const router = useRouter();
   const [hoveredOwner, setHoveredOwner] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const nodes = useMemo(() => {
     if (holders.length === 0) return [];
@@ -71,13 +72,20 @@ export default function HolderGraph({
 
   const hoveredNode = nodes.find((n) => n.owner === hoveredOwner);
 
+  function tooltipPos(node: (typeof nodes)[number]) {
+    const tx = node.cx > CENTER_X ? node.cx - TOOLTIP_W - 10 : node.cx + 10;
+    const ty = node.cy - TOOLTIP_H / 2;
+    return { tx, ty };
+  }
+
   return (
-    <div className="relative flex flex-col gap-4" ref={containerRef}>
+    <div className="flex flex-col gap-4">
       <svg
         viewBox="0 0 400 400"
         className="mx-auto w-full max-w-[400px]"
         role="img"
         aria-label={`Holder network graph for ${tokenName ?? "token"}`}
+        style={{ overflow: "visible" }}
       >
         {/* Lines from center to each node */}
         {nodes.map((node) => (
@@ -175,48 +183,56 @@ export default function HolderGraph({
             </text>
           </g>
         ))}
-      </svg>
 
-      {/* Hover tooltip */}
-      {hoveredNode && (
-        <div
-          className="pointer-events-none absolute z-10 w-48 rounded-lg border border-border bg-popover p-3 text-popover-foreground shadow-md"
-          style={{
-            left: `${(hoveredNode.cx / 400) * 100}%`,
-            top: `${(hoveredNode.cy / 400) * 100}%`,
-            transform:
-              hoveredNode.cx > 200
-                ? "translate(-110%, -50%)"
-                : "translate(10%, -50%)",
-          }}
-        >
-          <div className="mb-1.5 font-mono text-xs font-semibold">
-            {hoveredNode.truncAddr}
-          </div>
-          <div className="flex flex-col gap-1 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Holding</span>
-              <span className="font-medium">{hoveredNode.percentage.toFixed(1)}%</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Tier</span>
-              <span className="flex items-center gap-1.5">
-                <span
-                  className="inline-block size-2 rounded-full"
-                  style={{ backgroundColor: hoveredNode.fill }}
-                />
-                <span className="font-medium capitalize">{hoveredNode.tier}</span>
-              </span>
-            </div>
-            {hoveredNode.fairScore !== null && (
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">FairScore</span>
-                <span className="font-medium">{hoveredNode.fairScore}</span>
+        {/* Hover tooltip rendered inside SVG via foreignObject */}
+        {hoveredNode && (() => {
+          const { tx, ty } = tooltipPos(hoveredNode);
+          return (
+            <foreignObject
+              x={tx}
+              y={ty}
+              width={TOOLTIP_W}
+              height={TOOLTIP_H}
+              style={{ pointerEvents: "none", overflow: "visible" }}
+            >
+              <div
+                className="rounded-md border border-border bg-popover p-2 text-popover-foreground shadow-md"
+                style={{ fontSize: 11 }}
+              >
+                <div className="mb-1 font-mono text-[10px] font-semibold">
+                  {hoveredNode.truncAddr}
+                </div>
+                <div className="flex flex-col gap-0.5" style={{ fontSize: 10 }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Holding</span>
+                    <span className="font-medium">
+                      {hoveredNode.percentage.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Tier</span>
+                    <span className="flex items-center gap-1">
+                      <span
+                        className="inline-block size-1.5 rounded-full"
+                        style={{ backgroundColor: hoveredNode.fill }}
+                      />
+                      <span className="font-medium capitalize">
+                        {hoveredNode.tier}
+                      </span>
+                    </span>
+                  </div>
+                  {hoveredNode.fairScore !== null && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">FairScore</span>
+                      <span className="font-medium">{hoveredNode.fairScore}</span>
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
-        </div>
-      )}
+            </foreignObject>
+          );
+        })()}
+      </svg>
 
       {/* Tier legend */}
       <div
