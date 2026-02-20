@@ -25,7 +25,9 @@ import FairScoreDisplay from "@/components/features/FairScoreDisplay";
 import TrustRating from "@/components/features/TrustRating";
 import HolderQualityBar from "@/components/features/HolderQualityBar";
 import RiskFlags from "@/components/features/RiskFlags";
+import HolderGraph from "@/components/features/HolderGraph";
 import { useTokenAnalysis } from "@/hooks/useTokenAnalysis";
+import { useHolders } from "@/hooks/useHolders";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -139,6 +141,7 @@ export default function TokenPage() {
   const router = useRouter();
   const mint = params.mint;
   const { data, loading, error, refetch } = useTokenAnalysis(mint);
+  const { holders, loading: holdersLoading } = useHolders(mint, 10);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
@@ -293,6 +296,26 @@ export default function TokenPage() {
                   </span>
                 </p>
               )}
+            </CardContent>
+          </Card>
+
+          {/* --------------------------------------------------------------- */}
+          {/* Holder Network Graph                                            */}
+          {/* --------------------------------------------------------------- */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Holder Network</CardTitle>
+              <CardDescription>
+                Top holders colored by FairScale reputation tier. Node size
+                reflects holding percentage.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <HolderGraph
+                holders={holders}
+                tokenName={data.name}
+                loading={holdersLoading}
+              />
             </CardContent>
           </Card>
 
