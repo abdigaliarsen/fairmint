@@ -1,3 +1,4 @@
+import "./sentry.client.config";
 import posthog from "posthog-js";
 import * as Sentry from "@sentry/nextjs";
 

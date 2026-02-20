@@ -1,38 +1,13 @@
-export function register() {
-  // No-op for initialization
+import * as Sentry from "@sentry/nextjs";
+
+export async function register() {
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    await import("./sentry.server.config");
+  }
+
+  if (process.env.NEXT_RUNTIME === "edge") {
+    await import("./sentry.edge.config");
+  }
 }
 
-export const onRequestError = async (
-  err: Error,
-  request: { headers: { cookie?: string | string[] } },
-  _context: unknown
-) => {
-  if (process.env.NEXT_RUNTIME === "nodejs") {
-    const { getPostHogServer } = await import("./src/lib/posthog-server");
-    const posthog = getPostHogServer();
-
-    let distinctId: string | undefined;
-
-    if (request.headers.cookie) {
-      const cookieString = Array.isArray(request.headers.cookie)
-        ? request.headers.cookie.join("; ")
-        : request.headers.cookie;
-
-      const postHogCookieMatch = cookieString.match(
-        /ph_phc_.*?_posthog=([^;]+)/
-      );
-
-      if (postHogCookieMatch?.[1]) {
-        try {
-          const decodedCookie = decodeURIComponent(postHogCookieMatch[1]);
-          const postHogData = JSON.parse(decodedCookie);
-          distinctId = postHogData.distinct_id;
-        } catch {
-          // Ignore cookie parsing errors
-        }
-      }
-    }
-
-    await posthog.captureException(err, distinctId);
-  }
-};
+export const onRequestError = Sentry.captureRequestError;
