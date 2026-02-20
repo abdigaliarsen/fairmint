@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { fetchLatestProfiles } from "@/services/dexscreener";
 
 const FIELDS =
   "mint, name, symbol, image_url, trust_rating, deployer_tier, holder_count, token_age_days, risk_flags, analyzed_at";
@@ -59,19 +60,40 @@ export async function GET(request: NextRequest) {
 
       if (error) throw error;
 
-      const tokens = (data ?? []).map((row) => ({
-        mint: row.mint,
-        name: row.name,
-        symbol: row.symbol,
-        image_url: row.image_url,
-        trust_rating: row.trust_rating,
-        deployer_tier: row.deployer_tier,
+      // If the table has data, use it
+      if (data && data.length > 0) {
+        const tokens = data.map((row) => ({
+          mint: row.mint,
+          name: row.name,
+          symbol: row.symbol,
+          image_url: row.image_url,
+          trust_rating: row.trust_rating,
+          deployer_tier: row.deployer_tier,
+          holder_count: 0,
+          token_age_days: null,
+          risk_flags: [],
+          analyzed_at: row.analyzed ? row.created_at : null,
+          source: row.source,
+          created_at: row.created_at,
+        }));
+        return NextResponse.json({ tab, tokens });
+      }
+
+      // Fallback: live fetch from DexScreener when table is empty
+      const profiles = await fetchLatestProfiles(limit);
+      const tokens = profiles.map((p) => ({
+        mint: p.tokenAddress,
+        name: null,
+        symbol: null,
+        image_url: p.icon ?? null,
+        trust_rating: 0,
+        deployer_tier: null,
         holder_count: 0,
         token_age_days: null,
         risk_flags: [],
-        analyzed_at: row.analyzed ? row.created_at : null,
-        source: row.source,
-        created_at: row.created_at,
+        analyzed_at: null,
+        source: "dexscreener",
+        created_at: new Date().toISOString(),
       }));
 
       return NextResponse.json({ tab, tokens });

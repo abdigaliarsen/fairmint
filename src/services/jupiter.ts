@@ -42,14 +42,19 @@ export async function isJupiterVerified(mint: string): Promise<boolean> {
       return cachedTokens.has(mint);
     }
 
-    const res = await fetch("https://lite-api.jup.ag/tokens/v1", {
+    const apiKey = process.env.JUPITER_API_KEY;
+    const headers: Record<string, string> = {};
+    if (apiKey) headers["x-api-key"] = apiKey;
+
+    const res = await fetch("https://api.jup.ag/tokens/v2/tag?query=verified", {
+      headers,
       signal: AbortSignal.timeout(10_000),
     });
 
     if (!res.ok) return false;
 
-    const tokens = (await res.json()) as Array<{ address: string }>;
-    cachedTokens = new Set(tokens.map((t) => t.address));
+    const tokens = (await res.json()) as Array<{ address?: string; mint?: string }>;
+    cachedTokens = new Set(tokens.map((t) => t.address ?? t.mint ?? ""));
     cachedAt = now;
 
     return cachedTokens.has(mint);
@@ -83,7 +88,7 @@ export async function fetchRecentTokens(
       headers["x-api-key"] = apiKey;
     }
 
-    const res = await fetch("https://api.jup.ag/tokens/v2/new", {
+    const res = await fetch("https://api.jup.ag/tokens/v2/recent", {
       headers,
       signal: AbortSignal.timeout(10_000),
     });
