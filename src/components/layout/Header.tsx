@@ -6,10 +6,13 @@ import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { Shield, Search, LayoutDashboard, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useWalletAuth } from "@/hooks/useWalletAuth";
 
 export default function Header() {
   const { publicKey, disconnect, connected } = useWallet();
   const { setVisible } = useWalletModal();
+  // Bridges wallet adapter ↔ NextAuth: auto-signs message on connect
+  useWalletAuth();
 
   const truncatedAddress = publicKey
     ? `${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}`

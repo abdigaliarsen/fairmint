@@ -160,7 +160,7 @@ export default function DashboardPage() {
             {/* Score display */}
             <div className="flex shrink-0 flex-col items-center">
               <FairScoreDisplay
-                score={fairScore?.score ?? 0}
+                score={fairScore?.score ?? fairScore?.decimalScore ?? 0}
                 tier={currentTier}
                 size="lg"
               />
@@ -183,18 +183,18 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-0.5">
                       <span className="text-xs text-muted-foreground">
-                        Decimal Score
+                        Score
                       </span>
                       <span className="text-lg font-semibold text-foreground">
-                        {fairScore.decimalScore.toFixed(1)}
+                        {(fairScore.score ?? 0).toFixed(1)}
                       </span>
                     </div>
                     <div className="flex flex-col gap-0.5">
                       <span className="text-xs text-muted-foreground">
-                        Integer Score
+                        Tier
                       </span>
-                      <span className="text-lg font-semibold text-foreground">
-                        {fairScore.integerScore}
+                      <span className="text-lg font-semibold capitalize text-foreground">
+                        {fairScore.tier}
                       </span>
                     </div>
                   </div>

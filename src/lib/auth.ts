@@ -118,9 +118,8 @@ export const authOptions: AuthOptions = {
               .upsert(
                 {
                   wallet,
-                  fair_score: fairScore,
-                  fair_tier: fairTier,
-                  last_login: new Date().toISOString(),
+                  fairscore: fairScore ?? 0,
+                  tier: fairTier ?? "unrated",
                 },
                 { onConflict: "wallet" }
               );
