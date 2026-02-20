@@ -4,11 +4,11 @@
  * Solana token.
  *
  * Trust Rating Weights:
- *   Deployer FairScore:  40%
- *   Holder Quality:      25%
- *   Distribution:        15%
- *   Wallet Age:          10%
- *   Pattern Signals:     10%
+ *   Deployer FairScore:  15%
+ *   Holder Quality:      30%
+ *   Distribution:        20%
+ *   Wallet Age:          15%
+ *   Safety Signals:      20%
  *
  * Results are cached in the Supabase `token_analyses` table.
  */
@@ -77,11 +77,11 @@ const ANALYSIS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 /** Trust rating weight factors (must sum to 1.0). */
 const WEIGHTS = {
-  deployerScore: 0.4,
-  holderQuality: 0.25,
-  distribution: 0.15,
-  age: 0.1,
-  patterns: 0.1,
+  deployerScore: 0.15,
+  holderQuality: 0.3,
+  distribution: 0.2,
+  age: 0.15,
+  patterns: 0.2,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -112,37 +112,34 @@ function detectRiskFlags(
 ): RiskFlag[] {
   const flags: RiskFlag[] = [];
 
-  // 1. Low deployer score
-  if (deployerScore !== null && deployerScore < 300) {
-    flags.push(
-      makeRiskFlag(
-        deployerScore < 100 ? "critical" : "high",
-        "Low Deployer Score",
-        `The token deployer has a FairScore of ${deployerScore}, indicating ${
-          deployerScore < 100 ? "very low" : "low"
-        } reputation.`
-      )
-    );
-  }
-
-  // 2. Unrated deployer (new or unknown wallet)
-  if (deployerScore === null || deployerTier === "unrated") {
+  // 1. Low deployer score — only flag truly low scores.
+  // Many legitimate token deployers are program wallets with low FairScale
+  // scores, so this flag is informational rather than alarming.
+  if (deployerScore !== null && deployerScore < 100) {
     flags.push(
       makeRiskFlag(
         "medium",
-        "Unrated Deployer",
-        "The deployer wallet has no FairScale reputation history."
+        "Low Deployer Score",
+        `The token deployer has a FairScore of ${deployerScore}.`
       )
     );
   }
 
-  // 3. Concentrated holdings — top holder owns >50%
+  // 2. Concentrated holdings — top holder owns >50%
   if (holders.length > 0) {
     const topHolder = holders[0];
-    if (topHolder.percentage > 50) {
+    if (topHolder.percentage > 80) {
       flags.push(
         makeRiskFlag(
-          topHolder.percentage > 80 ? "critical" : "high",
+          "high",
+          "Concentrated Holdings",
+          `The top holder owns ${topHolder.percentage.toFixed(1)}% of the sampled supply.`
+        )
+      );
+    } else if (topHolder.percentage > 50) {
+      flags.push(
+        makeRiskFlag(
+          "medium",
           "Concentrated Holdings",
           `The top holder owns ${topHolder.percentage.toFixed(1)}% of the sampled supply.`
         )
@@ -150,7 +147,7 @@ function detectRiskFlags(
     } else if (topHolder.percentage > 25) {
       flags.push(
         makeRiskFlag(
-          "medium",
+          "low",
           "Significant Concentration",
           `The top holder owns ${topHolder.percentage.toFixed(1)}% of the sampled supply.`
         )
@@ -200,25 +197,31 @@ function detectRiskFlags(
 
 /**
  * Normalize a deployer score (0-1000+) to a 0-100 scale.
- * Unknown deployers get a penalty score of 20.
+ * Unknown deployers get a neutral score of 50 — most legitimate token
+ * deployers are program wallets that don't actively trade, so absence
+ * of a FairScale score is normal, not suspicious.
  */
 function computeDeployerComponent(deployerScore: number | null): number {
-  if (deployerScore === null) return 20;
-  return Math.min(100, (deployerScore / 1000) * 100);
+  if (deployerScore === null) return 50;
+  // Use a generous curve: any deployer with a FairScale score gets at least 30.
+  // Gold (600+) maps to 80+, Platinum (850+) approaches 100.
+  return Math.max(30, Math.min(100, (deployerScore / 850) * 100));
 }
 
 /**
  * Compute average holder quality from FairScale quick scores.
- * Returns a 0-100 value. Unknown holders are treated as 30.
+ * Returns a 0-100 value. Unknown holders are treated as 50 (neutral) —
+ * many legitimate holders are protocol vaults or institutional wallets
+ * that don't have FairScale scores.
  */
 function computeHolderQualityComponent(
   holderScores: Array<{ score: number | null }>
 ): number {
-  if (holderScores.length === 0) return 30;
+  if (holderScores.length === 0) return 50;
 
   const total = holderScores.reduce((sum, h) => {
     const normalized =
-      h.score !== null ? Math.min(100, (h.score / 1000) * 100) : 30;
+      h.score !== null ? Math.min(100, (h.score / 1000) * 100) : 50;
     return sum + normalized;
   }, 0);
 
