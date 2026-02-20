@@ -92,7 +92,7 @@ export interface WalletTransaction {
 
 let heliusClient: HeliusClient | null = null;
 
-function getHelius(): HeliusClient {
+export function getHelius(): HeliusClient {
   if (heliusClient) return heliusClient;
 
   const apiKey = process.env.HELIUS_API_KEY;
@@ -102,6 +102,14 @@ function getHelius(): HeliusClient {
 
   heliusClient = createHelius({ apiKey });
   return heliusClient;
+}
+
+/**
+ * Get the Helius webhook client for managing webhook subscriptions.
+ */
+export function getWebhookClient() {
+  const helius = getHelius();
+  return helius.webhooks;
 }
 
 // ---------------------------------------------------------------------------

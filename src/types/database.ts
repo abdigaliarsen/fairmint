@@ -195,6 +195,29 @@ export interface BrowsingHistoryEntry {
 export type BrowsingHistoryInsert = Omit<BrowsingHistoryEntry, "id" | "created_at">;
 
 // ---------------------------------------------------------------------------
+// New Token Events (Supabase table: new_token_events)
+// ---------------------------------------------------------------------------
+
+/** Source of a new token event. */
+export type NewTokenSource = "jupiter" | "dexscreener" | "pumpfun_graduated" | "helius_webhook";
+
+export interface NewTokenEvent {
+  id: string;
+  mint: string;
+  name: string | null;
+  symbol: string | null;
+  image_url: string | null;
+  source: NewTokenSource;
+  metadata: Record<string, unknown>;
+  analyzed: boolean;
+  trust_rating: number;
+  deployer_tier: string | null;
+  created_at: string;
+}
+
+export type NewTokenEventInsert = Omit<NewTokenEvent, "id" | "created_at">;
+
+// ---------------------------------------------------------------------------
 // Supabase Database Type Map
 // ---------------------------------------------------------------------------
 
@@ -235,6 +258,12 @@ export interface Database {
         Row: BrowsingHistoryEntry;
         Insert: BrowsingHistoryInsert;
         Update: Partial<BrowsingHistoryInsert>;
+        Relationships: [];
+      };
+      new_token_events: {
+        Row: NewTokenEvent;
+        Insert: NewTokenEventInsert;
+        Update: Partial<NewTokenEventInsert>;
         Relationships: [];
       };
     };
