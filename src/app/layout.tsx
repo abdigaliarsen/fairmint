@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
 import WalletProvider from "@/providers/WalletProvider";
 import SessionProvider from "@/providers/SessionProvider";
+import { PostHogProvider } from "@/providers/PostHogProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -29,13 +31,17 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <WalletProvider>
           <SessionProvider>
-            <TooltipProvider>
-              <div className="flex min-h-svh flex-col">
-                <Header />
-                <main className="flex-1">{children}</main>
-                <Footer />
-              </div>
-            </TooltipProvider>
+            <Suspense fallback={null}>
+              <PostHogProvider>
+                <TooltipProvider>
+                  <div className="flex min-h-svh flex-col">
+                    <Header />
+                    <main className="flex-1">{children}</main>
+                    <Footer />
+                  </div>
+                </TooltipProvider>
+              </PostHogProvider>
+            </Suspense>
           </SessionProvider>
         </WalletProvider>
       </body>
