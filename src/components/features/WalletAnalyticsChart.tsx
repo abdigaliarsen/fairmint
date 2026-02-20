@@ -6,6 +6,7 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Radar,
+  Tooltip,
   ResponsiveContainer,
 } from "recharts";
 import {
@@ -110,6 +111,18 @@ export default function WalletAnalyticsChart({
               domain={[0, 100]}
               tick={false}
               axisLine={false}
+            />
+            <Tooltip
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                const item = payload[0].payload as { metric: string; value: number };
+                return (
+                  <div className="rounded-md border border-border bg-popover px-3 py-1.5 text-xs text-popover-foreground shadow-sm">
+                    <p className="font-medium">{item.metric}</p>
+                    <p>Score: {item.value}/100</p>
+                  </div>
+                );
+              }}
             />
             <Radar
               name="Wallet"
