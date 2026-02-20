@@ -28,6 +28,7 @@ import RiskFlags from "@/components/features/RiskFlags";
 import HolderGraph from "@/components/features/HolderGraph";
 import ScoreRecommendations from "@/components/features/ScoreRecommendations";
 import AISummaryCard from "@/components/features/AISummaryCard";
+import ScoreHistoryChart from "@/components/features/ScoreHistoryChart";
 import { useTokenAnalysis } from "@/hooks/useTokenAnalysis";
 import { useHolders } from "@/hooks/useHolders";
 import { generateTokenTips } from "@/lib/recommendations";
@@ -240,6 +241,16 @@ export default function TokenPage() {
               <TrustRating rating={data.trustRating} />
             </CardContent>
           </Card>
+
+          {/* --------------------------------------------------------------- */}
+          {/* Score History                                                   */}
+          {/* --------------------------------------------------------------- */}
+          <ScoreHistoryChart
+            type="token"
+            subject={data.mint}
+            label="Trust Rating"
+            color="#059669"
+          />
 
           {/* --------------------------------------------------------------- */}
           {/* Deployer Info                                                   */}

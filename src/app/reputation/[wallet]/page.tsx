@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import FairScoreDisplay from "@/components/features/FairScoreDisplay";
 import ScoreRecommendations from "@/components/features/ScoreRecommendations";
 import AISummaryCard from "@/components/features/AISummaryCard";
+import ScoreHistoryChart from "@/components/features/ScoreHistoryChart";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
 import type { FairScoreData, FairScoreTier } from "@/types/database";
@@ -169,6 +170,14 @@ export default function ReputationPage() {
               badgeCount: data.fairScore?.badges?.length ?? 0,
               badgeLabels: data.fairScore?.badges?.map((b: { label: string }) => b.label).join(", "),
             } : null}
+          />
+
+          {/* Score History */}
+          <ScoreHistoryChart
+            type="wallet"
+            subject={wallet}
+            label="FairScore"
+            color="#7c3aed"
           />
 
           {/* Badges */}

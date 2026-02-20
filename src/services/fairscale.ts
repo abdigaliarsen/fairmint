@@ -248,6 +248,26 @@ export async function getFullScore(
     .select()
     .maybeSingle();
 
+  // Log wallet score history (one snapshot per wallet per day)
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: existingSnapshot } = await supabase
+    .from("wallet_score_history")
+    .select("id")
+    .eq("wallet", wallet)
+    .gte("recorded_at", `${today}T00:00:00Z`)
+    .lt("recorded_at", `${today}T23:59:59Z`)
+    .limit(1)
+    .maybeSingle();
+
+  if (!existingSnapshot) {
+    await supabase.from("wallet_score_history").insert({
+      wallet,
+      score_decimal: data.fairscore,
+      score_integer: effectiveIntegerScore,
+      tier,
+    });
+  }
+
   return {
     wallet,
     score: data.fairscore,

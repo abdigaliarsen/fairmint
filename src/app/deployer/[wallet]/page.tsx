@@ -26,6 +26,7 @@ import TokenCard from "@/components/features/TokenCard";
 import TokenGraph from "@/components/features/TokenGraph";
 import ScoreRecommendations from "@/components/features/ScoreRecommendations";
 import AISummaryCard from "@/components/features/AISummaryCard";
+import ScoreHistoryChart from "@/components/features/ScoreHistoryChart";
 import { useDeployerProfile } from "@/hooks/useDeployerProfile";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
@@ -236,6 +237,16 @@ export default function DeployerPage() {
               />
             </div>
           </section>
+
+          {/* --------------------------------------------------------------- */}
+          {/* Score History                                                   */}
+          {/* --------------------------------------------------------------- */}
+          <ScoreHistoryChart
+            type="wallet"
+            subject={data.wallet}
+            label="FairScore"
+            color="#7c3aed"
+          />
 
           {/* --------------------------------------------------------------- */}
           {/* Badges                                                          */}

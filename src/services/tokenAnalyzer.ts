@@ -416,6 +416,26 @@ export async function analyzeToken(
     .select()
     .maybeSingle();
 
+  // Log token score history (one snapshot per token per day)
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: existingSnapshot } = await supabase
+    .from("token_score_history")
+    .select("id")
+    .eq("mint", mint)
+    .gte("recorded_at", `${today}T00:00:00Z`)
+    .lt("recorded_at", `${today}T23:59:59Z`)
+    .limit(1)
+    .maybeSingle();
+
+  if (!existingSnapshot) {
+    await supabase.from("token_score_history").insert({
+      mint,
+      trust_rating: trustRating,
+      holder_count: holders.length,
+      risk_flag_count: riskFlags.length,
+    });
+  }
+
   return {
     mint,
     name: metadata.name || null,
