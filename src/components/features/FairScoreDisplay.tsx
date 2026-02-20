@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getTierColor } from "@/services/fairscale";
@@ -9,6 +10,7 @@ interface FairScoreDisplayProps {
   score: number;
   tier: string;
   size?: "sm" | "md" | "lg";
+  animate?: boolean;
 }
 
 const sizeConfig = {
@@ -35,31 +37,63 @@ const sizeConfig = {
   },
 } as const;
 
+function useAnimatedValue(target: number, duration: number, enabled: boolean): number {
+  const [value, setValue] = useState(enabled ? 0 : target);
+  const startRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!enabled || target === 0) {
+      setValue(target);
+      return;
+    }
+
+    startRef.current = null;
+    let rafId: number;
+
+    function step(timestamp: number) {
+      if (startRef.current === null) startRef.current = timestamp;
+      const elapsed = timestamp - startRef.current;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      setValue(target * eased);
+      if (progress < 1) rafId = requestAnimationFrame(step);
+    }
+
+    rafId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(rafId);
+  }, [target, duration, enabled]);
+
+  return value;
+}
+
 export default function FairScoreDisplay({
   score,
   tier,
   size = "md",
+  animate = true,
 }: FairScoreDisplayProps) {
   const tierKey = tier as FairScoreTier;
   const colors = getTierColor(tierKey);
   const config = sizeConfig[size];
 
-  // Normalize score to 0-100 for the circular progress
-  const normalizedScore = Math.min(Math.max(score, 0), 100);
+  const animatedScore = useAnimatedValue(
+    Math.min(Math.max(score, 0), 100),
+    600,
+    animate
+  );
+
   const circumference = 2 * Math.PI * 40;
   const strokeDashoffset =
-    circumference - (normalizedScore / 100) * circumference;
+    circumference - (animatedScore / 100) * circumference;
 
   return (
     <div className="flex flex-col items-center gap-2">
-      {/* Circular Score Display */}
       <div className={cn("relative", config.container)}>
         <svg
           className={cn("rotate-[-90deg]", config.ring)}
           viewBox="0 0 100 100"
           aria-hidden="true"
         >
-          {/* Background ring */}
           <circle
             cx="50"
             cy="50"
@@ -69,7 +103,6 @@ export default function FairScoreDisplay({
             strokeWidth={config.strokeWidth}
             className="text-muted/30"
           />
-          {/* Progress ring */}
           <circle
             cx="50"
             cy="50"
@@ -80,21 +113,19 @@ export default function FairScoreDisplay({
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
-            className={colors.text}
+            className={cn("transition-colors duration-500", colors.text)}
           />
         </svg>
-        {/* Score number in center */}
         <div className="absolute inset-0 flex items-center justify-center">
           <span
-            className={cn(config.score, colors.text)}
+            className={cn(config.score, "transition-colors duration-500", colors.text)}
             aria-label={`FairScore: ${score}`}
           >
-            {Math.round(score)}
+            {Math.round(animatedScore)}
           </span>
         </div>
       </div>
 
-      {/* Tier Badge */}
       <Badge
         className={cn(
           "border capitalize",
