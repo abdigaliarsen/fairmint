@@ -31,12 +31,12 @@ export default function ScoringMethodology() {
               <div className="h-1.5 rounded-full bg-emerald-500" style={{ width: `${f.weight * 2}px` }} />
               <span className="text-xs font-medium text-foreground">{f.weight}%</span>
               <span className="text-xs text-muted-foreground">{f.label}</span>
-              <span className="hidden text-[10px] text-muted-foreground/60 sm:inline">
+              <span className="hidden text-xs text-muted-foreground sm:inline">
                 — {f.description}
               </span>
             </div>
           ))}
-          <p className="mt-1 text-[10px] text-muted-foreground/60">
+          <p className="mt-1 text-xs text-muted-foreground">
             Powered by FairScale + Helius on-chain data
           </p>
         </div>

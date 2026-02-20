@@ -18,7 +18,7 @@ function AuthorityBadge({
   return (
     <div
       className={cn(
-        "flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium",
+        "flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
         active
           ? "border-red-300 bg-red-50 text-red-600 dark:border-red-800 dark:bg-red-950 dark:text-red-400"
           : "border-emerald-300 bg-emerald-50 text-emerald-600 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400"

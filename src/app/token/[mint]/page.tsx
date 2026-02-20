@@ -245,10 +245,10 @@ export default function TokenPage() {
                   Token Age: {data.tokenAgeDays}d
                 </div>
                 {data.tokenAgeDays < 2 && (
-                  <Badge className="border-red-300 bg-red-50 text-red-600 text-[10px] dark:border-red-800 dark:bg-red-950 dark:text-red-400">Very New</Badge>
+                  <Badge className="border-red-300 bg-red-50 text-red-600 text-xs dark:border-red-800 dark:bg-red-950 dark:text-red-400">Very New</Badge>
                 )}
                 {data.tokenAgeDays >= 2 && data.tokenAgeDays < 7 && (
-                  <Badge className="border-yellow-300 bg-yellow-50 text-yellow-600 text-[10px] dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-400">New Token</Badge>
+                  <Badge className="border-yellow-300 bg-yellow-50 text-yellow-600 text-xs dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-400">New Token</Badge>
                 )}
               </div>
             )}
@@ -294,7 +294,7 @@ export default function TokenPage() {
             <CardContent>
               <TrustRating rating={data.trustRating} />
               <ScoringMethodology />
-              <p className="mt-2 text-[10px] text-muted-foreground/60">
+              <p className="mt-2 text-xs text-muted-foreground">
                 Powered by FairScale + Helius
               </p>
             </CardContent>
@@ -311,7 +311,7 @@ export default function TokenPage() {
               <span className="text-xs font-medium text-foreground">
                 RugCheck: {data.rugCheck.riskLevel}
               </span>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 ({data.rugCheck.riskCount} risk{data.rugCheck.riskCount !== 1 ? "s" : ""} detected)
               </span>
             </div>
@@ -382,7 +382,7 @@ export default function TokenPage() {
                   Deployer information is not available for this token.
                 </p>
               )}
-              <p className="mt-3 text-[10px] text-muted-foreground/60">
+              <p className="mt-3 text-xs text-muted-foreground">
                 via FairScale
               </p>
             </CardContent>
@@ -411,7 +411,7 @@ export default function TokenPage() {
                   </span>
                 </p>
               )}
-              <p className="mt-2 text-[10px] text-muted-foreground/60">
+              <p className="mt-2 text-xs text-muted-foreground">
                 via Helius
               </p>
             </CardContent>
@@ -434,7 +434,7 @@ export default function TokenPage() {
                 tokenName={data.name}
                 loading={holdersLoading}
               />
-              <p className="mt-2 text-center text-[10px] text-muted-foreground/60">
+              <p className="mt-2 text-center text-xs text-muted-foreground">
                 via Helius
               </p>
             </CardContent>
