@@ -134,6 +134,10 @@ export default function LiquidityCard({ mint }: LiquidityCardProps) {
             ))}
           </div>
         )}
+
+        <p className="mt-3 text-[10px] text-muted-foreground/60">
+          via DexScreener
+        </p>
       </CardContent>
     </Card>
   );

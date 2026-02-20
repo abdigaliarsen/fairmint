@@ -294,6 +294,9 @@ export default function TokenPage() {
             <CardContent>
               <TrustRating rating={data.trustRating} />
               <ScoringMethodology />
+              <p className="mt-2 text-[10px] text-muted-foreground/60">
+                Powered by FairScale + Helius
+              </p>
             </CardContent>
           </Card>
 
@@ -379,6 +382,9 @@ export default function TokenPage() {
                   Deployer information is not available for this token.
                 </p>
               )}
+              <p className="mt-3 text-[10px] text-muted-foreground/60">
+                via FairScale
+              </p>
             </CardContent>
           </Card>
 
@@ -405,6 +411,9 @@ export default function TokenPage() {
                   </span>
                 </p>
               )}
+              <p className="mt-2 text-[10px] text-muted-foreground/60">
+                via Helius
+              </p>
             </CardContent>
           </Card>
 
@@ -425,6 +434,9 @@ export default function TokenPage() {
                 tokenName={data.name}
                 loading={holdersLoading}
               />
+              <p className="mt-2 text-center text-[10px] text-muted-foreground/60">
+                via Helius
+              </p>
             </CardContent>
           </Card>
 

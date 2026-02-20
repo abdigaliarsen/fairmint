@@ -209,6 +209,9 @@ export default function DeployerPage() {
               </span>
               <CopyButton text={data.wallet} />
             </div>
+            <p className="text-[10px] text-muted-foreground/60">
+              via FairScale
+            </p>
           </div>
 
           <Separator />
