@@ -78,21 +78,25 @@ export default function WalletAnalyticsChart({
   const stats = [
     {
       label: "Wallet Age",
-      value: features.wallet_age_days
+      value: features.wallet_age_days != null
         ? formatDays(features.wallet_age_days)
         : "N/A",
     },
     {
       label: "Transactions",
-      value: features.tx_count?.toLocaleString() ?? "N/A",
+      value: features.tx_count != null
+        ? features.tx_count.toLocaleString()
+        : "N/A",
     },
     {
       label: "Active Days",
-      value: features.active_days?.toLocaleString() ?? "N/A",
+      value: features.active_days != null
+        ? features.active_days.toLocaleString()
+        : "N/A",
     },
     {
       label: "Median Gap",
-      value: features.median_gap_hours
+      value: features.median_gap_hours != null
         ? `${features.median_gap_hours.toFixed(0)}h`
         : "N/A",
     },
