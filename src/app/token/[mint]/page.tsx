@@ -10,8 +10,12 @@ import {
   ExternalLink,
   RefreshCw,
   AlertCircle,
+  BadgeCheck,
+  Clock,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -30,10 +34,13 @@ import ScoreRecommendations from "@/components/features/ScoreRecommendations";
 import AISummaryCard from "@/components/features/AISummaryCard";
 import ScoreHistoryChart from "@/components/features/ScoreHistoryChart";
 import LiquidityCard from "@/components/features/LiquidityCard";
+import AuthorityBadges from "@/components/features/AuthorityBadges";
+import ScoringMethodology from "@/components/features/ScoringMethodology";
 import { useTokenAnalysis } from "@/hooks/useTokenAnalysis";
 import { useHolders } from "@/hooks/useHolders";
 import { generateTokenTips } from "@/lib/recommendations";
 import { useBrowsingHistory } from "@/hooks/useBrowsingHistory";
+import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -208,19 +215,49 @@ export default function TokenPage() {
           {/* --------------------------------------------------------------- */}
           {/* Token Header                                                    */}
           {/* --------------------------------------------------------------- */}
-          <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
-              {data.name ?? "Unknown Token"}
-              {data.symbol && (
-                <span className="ml-2 text-lg font-normal text-muted-foreground">
-                  ${data.symbol}
-                </span>
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
+                {data.name ?? "Unknown Token"}
+                {data.symbol && (
+                  <span className="ml-2 text-lg font-normal text-muted-foreground">
+                    ${data.symbol}
+                  </span>
+                )}
+              </h1>
+              {data.jupiterVerified && (
+                <Badge className="border-blue-300 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-400">
+                  <BadgeCheck className="mr-0.5 size-3" />
+                  Jupiter Verified
+                </Badge>
               )}
-            </h1>
+            </div>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <span className="font-mono">{truncateAddress(data.mint)}</span>
               <CopyButton text={data.mint} />
             </div>
+
+            {/* Token Age */}
+            {data.tokenAgeDays !== null && data.tokenAgeDays !== undefined && (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="size-3" />
+                  Token Age: {data.tokenAgeDays}d
+                </div>
+                {data.tokenAgeDays < 2 && (
+                  <Badge className="border-red-300 bg-red-50 text-red-600 text-[10px] dark:border-red-800 dark:bg-red-950 dark:text-red-400">Very New</Badge>
+                )}
+                {data.tokenAgeDays >= 2 && data.tokenAgeDays < 7 && (
+                  <Badge className="border-yellow-300 bg-yellow-50 text-yellow-600 text-[10px] dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-400">New Token</Badge>
+                )}
+              </div>
+            )}
+
+            {/* Authority Status */}
+            <AuthorityBadges
+              mintAuthorityActive={data.mintAuthorityActive}
+              freezeAuthorityActive={data.freezeAuthorityActive}
+            />
           </div>
 
           <Separator />
@@ -256,8 +293,26 @@ export default function TokenPage() {
             </CardHeader>
             <CardContent>
               <TrustRating rating={data.trustRating} />
+              <ScoringMethodology />
             </CardContent>
           </Card>
+
+          {/* RugCheck Second Opinion */}
+          {data.rugCheck && (
+            <div className="flex items-center justify-center gap-2">
+              <ShieldCheck className={cn(
+                "size-4",
+                data.rugCheck.riskLevel === "Good" ? "text-emerald-500" :
+                data.rugCheck.riskLevel === "Warning" ? "text-yellow-500" : "text-red-500"
+              )} />
+              <span className="text-xs font-medium text-foreground">
+                RugCheck: {data.rugCheck.riskLevel}
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                ({data.rugCheck.riskCount} risk{data.rugCheck.riskCount !== 1 ? "s" : ""} detected)
+              </span>
+            </div>
+          )}
 
           {/* --------------------------------------------------------------- */}
           {/* Score History                                                   */}
