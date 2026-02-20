@@ -76,48 +76,59 @@ export async function POST(request: NextRequest) {
     // Path 1: Helius webhook payload (array of enhanced transactions)
     // -----------------------------------------------------------------
     if (isWebhook) {
-      if (WEBHOOK_SECRET) {
-        const authHeader = request.headers.get("authorization");
-        if (authHeader !== WEBHOOK_SECRET) {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      if (!WEBHOOK_SECRET) {
+        console.error("HELIUS_WEBHOOK_SECRET not configured — rejecting webhook");
+        return NextResponse.json({ error: "Webhook secret not configured" }, { status: 500 });
+      }
+      const authHeader = request.headers.get("authorization");
+      if (authHeader !== WEBHOOK_SECRET) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      // Build per-mint source map (per-transaction Pump.fun detection)
+      const mintSources = new Map<string, NewTokenSource>();
+      for (const tx of body as Record<string, unknown>[]) {
+        const transfers = tx.tokenTransfers as Array<{ mint?: string }> | undefined;
+        const isPumpfun = isPumpfunGraduation(tx);
+        for (const t of transfers ?? []) {
+          if (t.mint && !mintSources.has(t.mint)) {
+            mintSources.set(t.mint, isPumpfun ? "pumpfun_graduated" : "helius_webhook");
+          }
         }
       }
 
-      const mints = extractMintsFromWebhook(body);
-      if (mints.length === 0) {
+      if (mintSources.size === 0) {
         return NextResponse.json({ ingested: 0 });
       }
 
-      const hasPumpfun = body.some((tx: Record<string, unknown>) =>
-        isPumpfunGraduation(tx)
+      // Fetch metadata in parallel
+      const mints = [...mintSources.keys()];
+      const metadataResults = await Promise.allSettled(
+        mints.map((mint) => getTokenMetadata(mint))
       );
+
+      // Batch upsert
       const supabase = createServerSupabaseClient();
-      let ingested = 0;
+      const rows = mints.map((mint, i) => {
+        const metadata = metadataResults[i].status === "fulfilled" ? metadataResults[i].value : null;
+        return {
+          mint,
+          name: metadata?.name ?? null,
+          symbol: metadata?.symbol ?? null,
+          image_url: metadata?.image ?? null,
+          source: mintSources.get(mint)!,
+          metadata: metadata?.raw ? { asset: metadata.raw } : {},
+          analyzed: false,
+          trust_rating: 0,
+          deployer_tier: null,
+        };
+      });
 
-      for (const mint of mints) {
-        const metadata = await getTokenMetadata(mint);
-        const source: NewTokenSource = hasPumpfun
-          ? "pumpfun_graduated"
-          : "helius_webhook";
+      const { error } = await supabase
+        .from("new_token_events")
+        .upsert(rows, { onConflict: "mint", ignoreDuplicates: true });
 
-        const { error } = await supabase.from("new_token_events").upsert(
-          {
-            mint,
-            name: metadata?.name ?? null,
-            symbol: metadata?.symbol ?? null,
-            image_url: metadata?.image ?? null,
-            source,
-            metadata: metadata?.raw ? { asset: metadata.raw } : {},
-            analyzed: false,
-            trust_rating: 0,
-            deployer_tier: null,
-          },
-          { onConflict: "mint", ignoreDuplicates: true }
-        );
-
-        if (!error) ingested++;
-      }
-
+      const ingested = error ? 0 : rows.length;
       return NextResponse.json({ ingested, total: mints.length });
     }
 

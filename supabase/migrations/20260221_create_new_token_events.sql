@@ -27,14 +27,18 @@ CREATE POLICY "Anyone can read new_token_events"
   ON new_token_events FOR SELECT
   USING (true);
 
--- Only service role can write (enforced by Supabase service role key)
-CREATE POLICY "Service role can insert new_token_events"
+-- Block anon/authenticated writes — service role bypasses RLS entirely
+CREATE POLICY "Deny anon insert on new_token_events"
   ON new_token_events FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (false);
 
-CREATE POLICY "Service role can update new_token_events"
+CREATE POLICY "Deny anon update on new_token_events"
   ON new_token_events FOR UPDATE
-  USING (true);
+  USING (false);
+
+CREATE POLICY "Deny anon delete on new_token_events"
+  ON new_token_events FOR DELETE
+  USING (false);
 
 -- Enable Realtime on this table
 ALTER PUBLICATION supabase_realtime ADD TABLE new_token_events;
