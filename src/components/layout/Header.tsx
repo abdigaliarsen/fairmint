@@ -3,16 +3,22 @@
 import Link from "next/link";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { Shield, Search, LayoutDashboard, LogOut } from "lucide-react";
+import { Shield, Search, LayoutDashboard, LogOut, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
+import { useNotifications } from "@/hooks/useNotifications";
+import NotificationBell from "@/components/features/NotificationBell";
 
 export default function Header() {
   const { publicKey, disconnect, connected } = useWallet();
   const { setVisible } = useWalletModal();
   // Bridges wallet adapter ↔ NextAuth: auto-signs message on connect
   useWalletAuth();
+
+  const walletAddress = publicKey?.toBase58() ?? null;
+  const { notifications, unreadCount, markAsRead, markAllRead } =
+    useNotifications(walletAddress);
 
   const truncatedAddress = publicKey
     ? `${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}`
@@ -45,6 +51,12 @@ export default function Header() {
               Search
             </Link>
           </Button>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/compare">
+              <Scale className="size-4" />
+              Compare
+            </Link>
+          </Button>
           {connected && (
             <Button variant="ghost" size="sm" asChild>
               <Link href="/dashboard">
@@ -64,6 +76,11 @@ export default function Header() {
                 <Search className="size-4" />
               </Link>
             </Button>
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/compare" aria-label="Compare">
+                <Scale className="size-4" />
+              </Link>
+            </Button>
             {connected && (
               <Button variant="ghost" size="icon" asChild>
                 <Link href="/dashboard" aria-label="Dashboard">
@@ -75,6 +92,12 @@ export default function Header() {
 
           {connected && truncatedAddress ? (
             <div className="flex items-center gap-2">
+              <NotificationBell
+                notifications={notifications}
+                unreadCount={unreadCount}
+                onMarkAllRead={markAllRead}
+                onMarkRead={(ids) => markAsRead(ids)}
+              />
               <span className="hidden text-sm text-muted-foreground sm:inline-block">
                 {truncatedAddress}
               </span>
