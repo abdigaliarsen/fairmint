@@ -5,10 +5,11 @@
  *
  * Trust Rating Weights:
  *   Deployer FairScore:  15%
- *   Holder Quality:      30%
+ *   Holder Quality:      25%
  *   Distribution:        20%
- *   Wallet Age:          15%
+ *   Wallet Age:          10%
  *   Safety Signals:      20%
+ *   Liquidity:           10%
  *
  * Results are cached in the Supabase `token_analyses` table.
  */
@@ -18,9 +19,15 @@ import {
   getTokenMetadata,
   getTokenHolders,
   identifyDeployer,
+  analyzeHolders,
   type TokenMetadata,
   type TokenHolder,
+  type LPVault,
 } from "@/services/helius";
+import {
+  getTokenLiquidity,
+  type TokenLiquidity,
+} from "@/services/dexscreener";
 import {
   getFullScore,
   getQuickScore,
@@ -65,6 +72,13 @@ export interface TrustAnalysis {
   /** Detected risk flags. */
   riskFlags: RiskFlag[];
 
+  /** DexScreener liquidity data, if available. */
+  liquidity: TokenLiquidity | null;
+  /** Percentage of supply in LP vaults. */
+  lpSupplyPercent: number;
+  /** Identified LP vault positions. */
+  lpVaults: LPVault[];
+
   /** Timestamp of the analysis. */
   analyzedAt: string;
 }
@@ -78,10 +92,11 @@ const ANALYSIS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 /** Trust rating weight factors (must sum to 1.0). */
 const WEIGHTS = {
   deployerScore: 0.15,
-  holderQuality: 0.3,
-  distribution: 0.2,
-  age: 0.15,
-  patterns: 0.2,
+  holderQuality: 0.25,
+  distribution: 0.20,
+  age: 0.10,
+  patterns: 0.20,
+  liquidity: 0.10,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -247,14 +262,27 @@ function computeDistributionComponent(holders: TokenHolder[]): number {
 }
 
 /**
- * Compute a wallet age signal (0-100).
- * Currently a placeholder that returns a neutral 50 since we don't
- * have direct wallet creation date data without extra API calls.
+ * Compute a wallet age signal (0-100) using real FairScale features.
+ * Falls back to neutral 50 if features are unavailable.
  */
-function computeAgeComponent(): number {
-  // TODO: Enhance with actual wallet creation date from Helius
-  // transaction history or on-chain data.
-  return 50;
+function computeAgeComponent(
+  walletAgeDays: number | null,
+  activeDays: number | null
+): number {
+  if (walletAgeDays === null) return 50;
+
+  let score: number;
+  if (walletAgeDays > 365) score = 90;
+  else if (walletAgeDays > 180) score = 70 + ((walletAgeDays - 180) / 185) * 20;
+  else if (walletAgeDays > 30) score = 30 + ((walletAgeDays - 30) / 150) * 40;
+  else score = (walletAgeDays / 30) * 30;
+
+  // Bonus for active usage
+  if (activeDays !== null && activeDays > 100) {
+    score = Math.min(100, score + 10);
+  }
+
+  return Math.round(score);
 }
 
 /**
@@ -282,6 +310,35 @@ function computePatternComponent(riskFlags: RiskFlag[]): number {
   }
 
   return Math.max(0, score);
+}
+
+/**
+ * Compute liquidity score (0-100) based on DexScreener data and LP vault positions.
+ * Tokens with more liquidity and healthy volume/liquidity ratios score higher.
+ */
+function computeLiquidityComponent(
+  dexData: TokenLiquidity | null,
+  lpSupplyPercent: number
+): number {
+  if (!dexData) {
+    if (lpSupplyPercent > 20) return 60;
+    if (lpSupplyPercent > 5) return 40;
+    return 20;
+  }
+
+  const liq = dexData.totalLiquidityUsd;
+  let score: number;
+
+  if (liq > 100_000) score = 100;
+  else if (liq > 10_000) score = 60 + ((liq - 10_000) / 90_000) * 40;
+  else if (liq > 1_000) score = 20 + ((liq - 1_000) / 9_000) * 40;
+  else score = (liq / 1_000) * 20;
+
+  if (dexData.volumeLiquidityRatio > 0.5) {
+    score = Math.min(100, score + 10);
+  }
+
+  return Math.round(score);
 }
 
 // ---------------------------------------------------------------------------
@@ -332,6 +389,9 @@ export async function analyzeToken(
         holderCount: cached.holder_count,
         topHolderConcentration: cached.top_holder_concentration,
         riskFlags: (cached.risk_flags ?? []) as RiskFlag[],
+        liquidity: null,
+        lpSupplyPercent: 0,
+        lpVaults: [],
         analyzedAt: cached.analyzed_at,
       };
     }
@@ -344,18 +404,29 @@ export async function analyzeToken(
   // 3. Fetch top holders
   const holders = await getTokenHolders(mint, 20);
 
-  // 4. Identify deployer and fetch their score
-  const deployerWallet = identifyDeployer(metadata);
-  let deployerScore: number | null = null;
-  let deployerTier: FairScoreTier | null = null;
+  // 3b. Analyze holders for LP vaults
+  const holderAnalysis = analyzeHolders(holders);
 
-  if (deployerWallet) {
-    const fullScore = await getFullScore(deployerWallet);
-    if (fullScore) {
-      deployerScore = fullScore.integerScore;
-      deployerTier = fullScore.tier;
-    }
-  }
+  // 4. Fetch deployer score + DexScreener liquidity in parallel
+  const deployerWallet = identifyDeployer(metadata);
+
+  const [deployerResult, dexData] = await Promise.all([
+    (async () => {
+      if (!deployerWallet) return { score: null, tier: null, features: null };
+      const fullScore = await getFullScore(deployerWallet);
+      if (!fullScore) return { score: null, tier: null, features: null };
+      return {
+        score: fullScore.integerScore,
+        tier: fullScore.tier,
+        features: fullScore.features ?? null,
+      };
+    })(),
+    getTokenLiquidity(mint),
+  ]);
+
+  let deployerScore: number | null = deployerResult.score;
+  let deployerTier: FairScoreTier | null = deployerResult.tier;
+  const deployerFeatures = deployerResult.features;
 
   // 5. Fetch holder FairScores (quick scores for the top holders)
   const holderScores = await Promise.all(
@@ -377,15 +448,23 @@ export async function analyzeToken(
   const deployerComponent = computeDeployerComponent(deployerScore);
   const holderQualityComponent = computeHolderQualityComponent(holderScores);
   const distributionComponent = computeDistributionComponent(holders);
-  const ageComponent = computeAgeComponent();
+  const ageComponent = computeAgeComponent(
+    deployerFeatures?.wallet_age_days ?? null,
+    deployerFeatures?.active_days ?? null
+  );
   const patternComponent = computePatternComponent(riskFlags);
+  const liquidityComponent = computeLiquidityComponent(
+    dexData,
+    holderAnalysis.lpSupplyPercent
+  );
 
   const trustRating = Math.round(
     deployerComponent * WEIGHTS.deployerScore +
       holderQualityComponent * WEIGHTS.holderQuality +
       distributionComponent * WEIGHTS.distribution +
       ageComponent * WEIGHTS.age +
-      patternComponent * WEIGHTS.patterns
+      patternComponent * WEIGHTS.patterns +
+      liquidityComponent * WEIGHTS.liquidity
   );
 
   const topHolderConcentration = holders[0]?.percentage ?? 0;
@@ -449,6 +528,9 @@ export async function analyzeToken(
     holderCount: holders.length,
     topHolderConcentration,
     riskFlags,
+    liquidity: dexData,
+    lpSupplyPercent: holderAnalysis.lpSupplyPercent,
+    lpVaults: holderAnalysis.lpVaults,
     analyzedAt,
   };
 }
