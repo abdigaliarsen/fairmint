@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import {
@@ -18,7 +19,22 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import TokenSearch from "@/components/features/TokenSearch";
+import TokenCard from "@/components/features/TokenCard";
+import type { FairScoreTier } from "@/types/database";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface FeaturedToken {
+  mint: string;
+  name: string | null;
+  symbol: string | null;
+  trust_rating: number;
+  deployer_tier: FairScoreTier | null;
+}
 
 // ---------------------------------------------------------------------------
 // How It Works steps
@@ -83,6 +99,25 @@ const features = [
 export default function HomePage() {
   const { connected } = useWallet();
   const { setVisible } = useWalletModal();
+  const [featuredTokens, setFeaturedTokens] = useState<FeaturedToken[]>([]);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadFeatured() {
+      try {
+        const res = await fetch("/api/featured?limit=6");
+        if (res.ok) {
+          const data = await res.json();
+          setFeaturedTokens(data.tokens ?? []);
+        }
+      } catch {
+        // Silently fail — featured tokens are non-critical
+      } finally {
+        setFeaturedLoading(false);
+      }
+    }
+    loadFeatured();
+  }, []);
 
   return (
     <div className="flex flex-col">
@@ -108,6 +143,44 @@ export default function HomePage() {
           {/* Token Search */}
           <div className="w-full max-w-xl">
             <TokenSearch placeholder="Search tokens by name, symbol, or mint address..." />
+          </div>
+        </div>
+      </section>
+
+      {/* ----------------------------------------------------------------- */}
+      {/* Featured Tokens                                                   */}
+      {/* ----------------------------------------------------------------- */}
+      <section className="border-b bg-background py-16 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <h2 className="text-center text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+            Trending Tokens
+          </h2>
+          <p className="mx-auto mt-2 max-w-xl text-center text-muted-foreground">
+            Top-rated Solana tokens analyzed by our trust algorithm.
+          </p>
+
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {featuredLoading &&
+              Array.from({ length: 6 }).map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="flex flex-col gap-3 py-4">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-3 w-full" />
+                  </CardContent>
+                </Card>
+              ))}
+            {!featuredLoading &&
+              featuredTokens.map((token) => (
+                <TokenCard
+                  key={token.mint}
+                  mint={token.mint}
+                  name={token.name}
+                  symbol={token.symbol}
+                  trustRating={token.trust_rating}
+                  deployerTier={token.deployer_tier}
+                />
+              ))}
           </div>
         </div>
       </section>

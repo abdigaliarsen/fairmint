@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { Search, Loader2, ArrowRight } from "lucide-react";
+import { Search, Loader2, ArrowRight, TrendingUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,7 +65,27 @@ export default function SearchPage() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [popularTokens, setPopularTokens] = useState<SearchResult[]>([]);
+  const [popularLoading, setPopularLoading] = useState(true);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load popular tokens on mount
+  useEffect(() => {
+    async function loadPopular() {
+      try {
+        const res = await fetch("/api/featured?limit=12");
+        if (res.ok) {
+          const data = await res.json();
+          setPopularTokens(data.tokens ?? []);
+        }
+      } catch {
+        // Silently fail
+      } finally {
+        setPopularLoading(false);
+      }
+    }
+    loadPopular();
+  }, []);
 
   const fetchResults = useCallback(async (searchQuery: string) => {
     const trimmed = searchQuery.trim();
@@ -224,15 +244,43 @@ export default function SearchPage() {
         )}
 
       {/* --------------------------------------------------------------- */}
-      {/* Initial State (no search yet)                                   */}
+      {/* Initial State: Popular Tokens                                   */}
       {/* --------------------------------------------------------------- */}
       {!isLoading && !hasSearched && (
-        <div className="flex flex-col items-center gap-2 py-12 text-center text-muted-foreground">
-          <Search className="size-8 text-muted-foreground/40" />
-          <p className="text-sm">
-            Start typing to search for tokens in our database.
-          </p>
-        </div>
+        <section aria-label="Popular tokens">
+          <div className="mb-6 flex items-center gap-2">
+            <TrendingUp className="size-5 text-emerald-600" />
+            <h2 className="text-lg font-semibold text-foreground">
+              Popular Tokens
+            </h2>
+          </div>
+
+          {popularLoading && <SearchResultsSkeleton />}
+
+          {!popularLoading && popularTokens.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {popularTokens.map((token) => (
+                <TokenCard
+                  key={token.mint}
+                  mint={token.mint}
+                  name={token.name}
+                  symbol={token.symbol}
+                  trustRating={token.trust_rating}
+                  deployerTier={token.deployer_tier}
+                />
+              ))}
+            </div>
+          )}
+
+          {!popularLoading && popularTokens.length === 0 && (
+            <div className="flex flex-col items-center gap-2 py-12 text-center text-muted-foreground">
+              <Search className="size-8 text-muted-foreground/40" />
+              <p className="text-sm">
+                Start typing to search for tokens in our database.
+              </p>
+            </div>
+          )}
+        </section>
       )}
     </div>
   );
