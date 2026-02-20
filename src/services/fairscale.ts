@@ -18,6 +18,7 @@ import type {
   FairScaleAction,
   Badge,
   CachedScoreInsert,
+  WalletFeatures,
 } from "@/types/database";
 
 const FAIRSCALE_BASE_URL = "https://api.fairscale.xyz";
@@ -194,6 +195,7 @@ export async function getFullScore(
       !Number.isNaN(cached.score_integer);
 
     if (age < CACHE_TTL_MS && hasValidScores) {
+      const cachedFeatures = ((cached.raw_response as Record<string, unknown>)?.features ?? {}) as WalletFeatures;
       return {
         wallet: cached.wallet,
         score: cached.score_decimal,
@@ -202,6 +204,7 @@ export async function getFullScore(
         updatedAt: cached.fetched_at,
         decimalScore: cached.score_decimal,
         integerScore: cached.score_integer,
+        features: cachedFeatures,
       };
     }
   }
@@ -215,6 +218,7 @@ export async function getFullScore(
   const integerScore = await getQuickScore(wallet);
   const effectiveIntegerScore = integerScore ?? Math.round(data.fairscore * 10);
   const tier = (data.tier as FairScoreTier) || classifyTier(effectiveIntegerScore);
+  const features = (data.features ?? {}) as WalletFeatures;
 
   const badges: Badge[] = (data.badges ?? []).map((b) => ({
     id: b.id,
@@ -277,6 +281,7 @@ export async function getFullScore(
     updatedAt: cacheRow.fetched_at,
     decimalScore: data.fairscore,
     integerScore: effectiveIntegerScore,
+    features,
   };
 }
 

@@ -30,6 +30,19 @@ export interface FairScaleAction {
   cta?: string;
 }
 
+/** Wallet analytics features from the FairScale /score endpoint. */
+export interface WalletFeatures {
+  lst_percentile_score: number;
+  major_percentile_score: number;
+  native_sol_percentile: number;
+  stable_percentile_score: number;
+  tx_count: number;
+  active_days: number;
+  median_gap_hours: number;
+  wallet_age_days: number;
+  [key: string]: number;
+}
+
 /** Risk flag attached to a token analysis. */
 export interface RiskFlag {
   id: string;
@@ -56,6 +69,8 @@ export interface FairScoreData {
   integerScore: number;
   /** Recommended actions from FairScale */
   actions?: FairScaleAction[];
+  /** Detailed wallet analytics features from /score */
+  features?: WalletFeatures;
 }
 
 // ---------------------------------------------------------------------------
