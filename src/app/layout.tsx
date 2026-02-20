@@ -6,6 +6,7 @@ import WalletProvider from "@/providers/WalletProvider";
 import SessionProvider from "@/providers/SessionProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Header from "@/components/layout/Header";
+import ThemeProvider from "@/providers/ThemeProvider";
 import Footer from "@/components/layout/Footer";
 
 const inter = Inter({
@@ -27,17 +28,19 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <WalletProvider>
-          <SessionProvider>
-            <TooltipProvider>
-              <div className="flex min-h-svh flex-col">
-                <Header />
-                <main className="flex-1">{children}</main>
-                <Footer />
-              </div>
-            </TooltipProvider>
-          </SessionProvider>
-        </WalletProvider>
+        <ThemeProvider>
+          <WalletProvider>
+            <SessionProvider>
+              <TooltipProvider>
+                <div className="flex min-h-svh flex-col">
+                  <Header />
+                  <main className="flex-1">{children}</main>
+                  <Footer />
+                </div>
+              </TooltipProvider>
+            </SessionProvider>
+          </WalletProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

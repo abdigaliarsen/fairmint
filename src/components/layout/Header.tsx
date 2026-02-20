@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { Shield, Search, LayoutDashboard, LogOut, Scale } from "lucide-react";
+import { Shield, Search, LayoutDashboard, LogOut, Scale, Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
@@ -13,6 +14,7 @@ import NotificationBell from "@/components/features/NotificationBell";
 export default function Header() {
   const { publicKey, disconnect, connected } = useWallet();
   const { setVisible } = useWalletModal();
+  const { theme, setTheme } = useTheme();
   // Bridges wallet adapter ↔ NextAuth: auto-signs message on connect
   useWalletAuth();
 
@@ -69,6 +71,16 @@ export default function Header() {
 
         {/* Wallet Actions */}
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            aria-label="Toggle theme"
+            className="size-8"
+          >
+            <Sun className="size-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute size-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
+          </Button>
           {/* Mobile nav links */}
           <div className="flex items-center gap-1 sm:hidden">
             <Button variant="ghost" size="icon" asChild>
