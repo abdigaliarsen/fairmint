@@ -19,6 +19,16 @@ export interface JupiterRecentToken {
   created_at?: string;
 }
 
+/** Raw shape returned by Jupiter /tokens/v2/recent */
+interface JupiterRecentRaw {
+  id: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  icon?: string;
+  createdAt?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Verified list cache (1 hour)
 // ---------------------------------------------------------------------------
@@ -98,7 +108,15 @@ export async function fetchRecentTokens(
       return [];
     }
 
-    const tokens = (await res.json()) as JupiterRecentToken[];
+    const raw = (await res.json()) as JupiterRecentRaw[];
+    const tokens: JupiterRecentToken[] = raw.map((t) => ({
+      mint: t.id,
+      name: t.name,
+      symbol: t.symbol,
+      decimals: t.decimals,
+      logoURI: t.icon,
+      created_at: t.createdAt,
+    }));
     recentTokensCache = tokens;
     recentCachedAt = now;
 
