@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TokenTrust — Pitch Deck</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --border: #262626;
+    --text: #fafafa;
+    --muted: #a1a1aa;
+    --emerald: #10b981;
+    --emerald-dim: #065f46;
+    --violet: #8b5cf6;
+    --amber: #f59e0b;
+    --red: #ef4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .slide {
+    display: none;
+    width: 100vw;
+    height: 100vh;
+    padding: 60px 80px;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .slide.active { display: flex; }
+
+  h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin-bottom: 24px;
+  }
+
+  h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin-bottom: 32px;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--emerald);
+  }
+
+  p, li {
+    font-size: 1.35rem;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+
+  .accent { color: var(--emerald); }
+  .violet { color: var(--violet); }
+  .amber { color: var(--amber); }
+  .red { color: var(--red); }
+
+  .subtitle {
+    font-size: 1.5rem;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: 1px solid var(--emerald);
+    color: var(--emerald);
+    margin-bottom: 24px;
+  }
+
+  ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  ul li::before {
+    content: "→";
+    color: var(--emerald);
+    font-weight: 700;
+    margin-right: 12px;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-top: 16px;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    margin-top: 16px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+  }
+
+  .card h3 { margin-bottom: 8px; }
+  .card p { font-size: 1.1rem; }
+
+  .stat {
+    text-align: center;
+    padding: 24px;
+  }
+
+  .stat-number {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--emerald);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .stat-label {
+    font-size: 1rem;
+    color: var(--muted);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+    font-size: 1.1rem;
+  }
+
+  th {
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 2px solid var(--border);
+    color: var(--emerald);
+    font-weight: 600;
+  }
+
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  .bar-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .bar-label {
+    width: 180px;
+    font-size: 1rem;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  .bar {
+    height: 32px;
+    border-radius: 8px;
+    background: var(--emerald);
+    display: flex;
+    align-items: center;
+    padding-left: 12px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: white;
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 32px;
+    background: var(--surface);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .nav {
+    position: fixed;
+    bottom: 32px;
+    right: 40px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    z-index: 100;
+  }
+
+  .nav button {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 1.25rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .nav button:hover {
+    background: var(--emerald-dim);
+    border-color: var(--emerald);
+  }
+
+  .nav span {
+    font-size: 0.875rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .slide-number {
+    position: fixed;
+    bottom: 40px;
+    left: 40px;
+    font-size: 0.875rem;
+    color: var(--border);
+    z-index: 100;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: start;
+  }
+
+  .funnel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .funnel-step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .funnel-step .num {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--emerald);
+    width: 40px;
+  }
+
+  .funnel-step .content h3 {
+    margin-bottom: 4px;
+    font-size: 1.1rem;
+  }
+
+  .funnel-step .content p {
+    font-size: 0.95rem;
+    margin: 0;
+  }
+
+  .logo-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .logo-mark svg {
+    width: 48px;
+    height: 48px;
+  }
+
+  .logo-mark span {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .center-slide {
+    align-items: center;
+    text-align: center;
+  }
+
+  .center-slide h1, .center-slide h2 {
+    max-width: 800px;
+  }
+
+  .center-slide p {
+    max-width: 600px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Slide 1: Title -->
+<div class="slide center-slide" id="slide-1">
+  <div class="logo-mark">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+    <span>TokenTrust</span>
+  </div>
+  <h1>Reputation-Powered<br>Token Intelligence</h1>
+  <p class="subtitle">Know who deployed it. Know who holds it.<br>Know before you buy.</p>
+  <div style="margin-top: 32px; display: flex; gap: 16px; justify-content: center;">
+    <span class="tag">Built on FairScale</span>
+    <span class="tag" style="border-color: var(--violet); color: var(--violet);">Live on Solana</span>
+  </div>
+</div>
+
+<!-- Slide 2: Problem -->
+<div class="slide" id="slide-2">
+  <span class="tag">The Problem</span>
+  <h2>Solana traders are flying blind</h2>
+  <ul>
+    <li><strong>50,000+ new tokens</strong> launch on Solana every week</li>
+    <li>No reliable way to evaluate trust before trading</li>
+    <li>Existing tools check <em>code</em> — but ignore <strong>who deployed it</strong> and <strong>who holds it</strong></li>
+    <li>Result: rug pulls, Sybil-farmed holders, and lost capital</li>
+  </ul>
+</div>
+
+<!-- Slide 3: Solution -->
+<div class="slide" id="slide-3">
+  <span class="tag">The Solution</span>
+  <h2>On-chain reputation as the trust layer</h2>
+  <p style="margin-bottom: 32px;">TokenTrust turns FairScale reputation into actionable intelligence for every token on Solana.</p>
+  <div class="grid-3">
+    <div class="card">
+      <h3>Deployer Scoring</h3>
+      <p>Every token's deployer is scored via FairScale. A Platinum deployer is fundamentally different from a fresh wallet.</p>
+    </div>
+    <div class="card">
+      <h3>Holder Quality</h3>
+      <p>Top holders are individually scored. High-reputation holders signal genuine demand, not Sybil farming.</p>
+    </div>
+    <div class="card">
+      <h3>Risk Detection</h3>
+      <p>15+ risk patterns: concentrated supply, connected wallets, low deployer scores, missing authority revocations.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 4: FairScore Integration -->
+<div class="slide" id="slide-4">
+  <span class="tag">Core Integration</span>
+  <h2>FairScore powers <span class="accent">50%</span> of the trust rating</h2>
+  <div class="grid-2" style="margin-top: 24px;">
+    <div>
+      <div style="margin-bottom: 24px;">
+        <div class="bar-container">
+          <span class="bar-label">Holder Quality</span>
+          <div class="progress-track"><div class="bar" style="width: 50%;">25%</div></div>
+        </div>
+        <div class="bar-container">
+          <span class="bar-label">Behavior Patterns</span>
+          <div class="progress-track"><div class="bar" style="width: 40%; background: var(--border);">20%</div></div>
+        </div>
+        <div class="bar-container">
+          <span class="bar-label">Distribution</span>
+          <div class="progress-track"><div class="bar" style="width: 40%; background: var(--border);">20%</div></div>
+        </div>
+        <div class="bar-container">
+          <span class="bar-label">Deployer Rep</span>
+          <div class="progress-track"><div class="bar" style="width: 30%;">15%</div></div>
+        </div>
+        <div class="bar-container">
+          <span class="bar-label">Wallet Age</span>
+          <div class="progress-track"><div class="bar" style="width: 20%;">10%</div></div>
+        </div>
+        <div class="bar-container">
+          <span class="bar-label">Liquidity</span>
+          <div class="progress-track"><div class="bar" style="width: 20%; background: var(--border);">10%</div></div>
+        </div>
+      </div>
+      <p style="font-size: 1rem;"><span class="accent">Green bars</span> = powered by FairScale API</p>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom: 16px;">
+        <h3>Scoring Engine</h3>
+        <p>3 FairScale endpoints (/score, /fairScore, /walletScore) feed the composite trust rating</p>
+      </div>
+      <div class="card" style="margin-bottom: 16px;">
+        <h3>Access Control</h3>
+        <p>User's own FairScore tier gates comparison slots (2→4), recommendation depth, and premium features</p>
+      </div>
+      <div class="card">
+        <h3>Risk Flags</h3>
+        <p>Low deployer scores, Sybil detection, and holder quality warnings — all from FairScale signals</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 5: Tier Gating -->
+<div class="slide" id="slide-5">
+  <span class="tag">Tier-Gated Features</span>
+  <h2>Reputation unlocks capabilities</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th style="color: var(--amber);">Bronze</th>
+        <th style="color: #94a3b8;">Silver</th>
+        <th style="color: #eab308);">Gold</th>
+        <th style="color: var(--violet);">Platinum</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Comparison Slots</td>
+        <td>2</td>
+        <td>3</td>
+        <td>4</td>
+        <td>4</td>
+      </tr>
+      <tr>
+        <td>Recommendations</td>
+        <td>Top 3</td>
+        <td>Top 5</td>
+        <td>All</td>
+        <td>All</td>
+      </tr>
+      <tr>
+        <td>Token Analysis</td>
+        <td>Basic</td>
+        <td>Standard</td>
+        <td>Full</td>
+        <td>Full + Priority</td>
+      </tr>
+      <tr>
+        <td>Holder Quality</td>
+        <td>Summary</td>
+        <td>Detailed</td>
+        <td>Full + Graph</td>
+        <td>Full + Graph</td>
+      </tr>
+      <tr>
+        <td>Watchlist</td>
+        <td>5 items</td>
+        <td>10 items</td>
+        <td>Unlimited</td>
+        <td>Unlimited</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Slide 6: Features -->
+<div class="slide" id="slide-6">
+  <span class="tag">Product</span>
+  <h2>Full-featured token intelligence</h2>
+  <div class="grid-3">
+    <div class="card">
+      <h3>Token Analysis</h3>
+      <p>Trust rating, deployer profile, holder graph, risk flags, RugCheck, Jupiter verification, AI summary</p>
+    </div>
+    <div class="card">
+      <h3>Discovery Feed</h3>
+      <p>Trending, new launches (real-time), and top-trusted tokens — all scored and ranked</p>
+    </div>
+    <div class="card">
+      <h3>Comparison</h3>
+      <p>Side-by-side tokens, wallets, or deployers. Tier-gated slots. Winner highlighting.</p>
+    </div>
+    <div class="card">
+      <h3>Wallet Passport</h3>
+      <p>Full reputation profile with score history, radar chart, badges, and improvement tips</p>
+    </div>
+    <div class="card">
+      <h3>Leaderboard</h3>
+      <p>Top 30 wallets by FairScore. Filter by tier. Activity metrics and profile links.</p>
+    </div>
+    <div class="card">
+      <h3>Dashboard</h3>
+      <p>Personal FairScore, watchlist, recommendations, and quick token lookup.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 7: Technical -->
+<div class="slide" id="slide-7">
+  <span class="tag">Technical</span>
+  <h2>Production-grade architecture</h2>
+  <div class="two-col">
+    <div>
+      <div class="grid-2" style="gap: 16px;">
+        <div class="card stat">
+          <div class="stat-number">128</div>
+          <div class="stat-label">Commits</div>
+        </div>
+        <div class="card stat">
+          <div class="stat-number">25+</div>
+          <div class="stat-label">API Routes</div>
+        </div>
+        <div class="card stat">
+          <div class="stat-number">30+</div>
+          <div class="stat-label">Components</div>
+        </div>
+        <div class="card stat">
+          <div class="stat-number">6</div>
+          <div class="stat-label">Integrations</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <table style="font-size: 1rem;">
+        <tr><td style="color: var(--emerald); font-weight: 600;">Framework</td><td>Next.js 16, React 19, TypeScript</td></tr>
+        <tr><td style="color: var(--emerald); font-weight: 600;">UI</td><td>Tailwind CSS + shadcn/ui</td></tr>
+        <tr><td style="color: var(--emerald); font-weight: 600;">Auth</td><td>NextAuth + Solana Wallet Adapter</td></tr>
+        <tr><td style="color: var(--emerald); font-weight: 600;">Database</td><td>Supabase (PostgreSQL)</td></tr>
+        <tr><td style="color: var(--emerald); font-weight: 600;">Reputation</td><td>FairScale API (3 endpoints)</td></tr>
+        <tr><td style="color: var(--emerald); font-weight: 600;">Blockchain</td><td>Helius SDK (RPC + DAS)</td></tr>
+        <tr><td style="color: var(--emerald); font-weight: 600;">AI</td><td>Groq (Llama 3.3 70B)</td></tr>
+        <tr><td style="color: var(--emerald); font-weight: 600;">Monitoring</td><td>Sentry + PostHog</td></tr>
+        <tr><td style="color: var(--emerald); font-weight: 600;">Hosting</td><td>Vercel (edge)</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 8: Business Model -->
+<div class="slide" id="slide-8">
+  <span class="tag">Business</span>
+  <h2>Three revenue paths</h2>
+  <div class="grid-3" style="margin-bottom: 40px;">
+    <div class="card">
+      <h3>Premium Tiers</h3>
+      <p>Advanced analytics, unlimited comparison slots, priority analysis, and historical data for paying users.</p>
+    </div>
+    <div class="card">
+      <h3>B2B API</h3>
+      <p>Trust scores as a service for DEXs, wallets, and trading platforms. Embed TokenTrust intelligence anywhere.</p>
+    </div>
+    <div class="card">
+      <h3>Data Partnerships</h3>
+      <p>Aggregated trust intelligence for institutional traders, funds, and risk management platforms.</p>
+    </div>
+  </div>
+  <h3 style="color: var(--text); font-size: 1.5rem;">Target Audience</h3>
+  <p>Solana token traders, DeFi users evaluating new launches, project teams demonstrating credibility, wallet providers seeking trust signals.</p>
+</div>
+
+<!-- Slide 9: Go-to-Market -->
+<div class="slide" id="slide-9">
+  <span class="tag">Growth</span>
+  <h2>Go-to-market strategy</h2>
+  <div class="funnel">
+    <div class="funnel-step">
+      <div class="num">01</div>
+      <div class="content">
+        <h3>0 → 100 users</h3>
+        <p>Launch on Solana Twitter, engage trading communities, list on Legends.fun, build in public</p>
+      </div>
+    </div>
+    <div class="funnel-step">
+      <div class="num">02</div>
+      <div class="content">
+        <h3>100 → 1,000 users</h3>
+        <p>Integrate with popular Solana wallets and DEX aggregators as an embedded trust signal provider</p>
+      </div>
+    </div>
+    <div class="funnel-step">
+      <div class="num">03</div>
+      <div class="content">
+        <h3>1,000 → 10,000 users</h3>
+        <p>API partnerships with trading platforms. Embed trust scores directly in DEX UIs. B2B revenue.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 10: Traction -->
+<div class="slide" id="slide-10">
+  <span class="tag">Traction</span>
+  <h2>Shipped and live</h2>
+  <div class="grid-2">
+    <div>
+      <div class="card stat" style="margin-bottom: 16px;">
+        <div class="stat-number" style="font-size: 2rem;">fairmint-sigma.vercel.app</div>
+        <div class="stat-label">Live production URL</div>
+      </div>
+      <div class="grid-2" style="gap: 16px;">
+        <div class="card stat">
+          <div class="stat-number">128</div>
+          <div class="stat-label">Commits shipped</div>
+        </div>
+        <div class="card stat">
+          <div class="stat-number">10+</div>
+          <div class="stat-label">Pages built</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <ul>
+        <li>Listed on Legends.fun (code: FAIRAT)</li>
+        <li>Full FairScale integration across 3 API endpoints</li>
+        <li>Production deployment on Vercel</li>
+        <li>Real-time token discovery feed</li>
+        <li>Interactive onboarding for new users</li>
+        <li>Wallet authentication with signature verification</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 11: Team -->
+<div class="slide" id="slide-11">
+  <span class="tag">Team</span>
+  <h2>Built by</h2>
+  <div class="card" style="max-width: 500px;">
+    <h3 style="font-size: 1.5rem;">Arsen Abdigali</h3>
+    <p style="margin-bottom: 12px;">Full-Stack Developer</p>
+    <ul style="gap: 8px;">
+      <li style="font-size: 1rem;">128 commits, end-to-end development</li>
+      <li style="font-size: 1rem;">Token analysis, comparison, discovery, onboarding</li>
+      <li style="font-size: 1rem;">FairScale integration, Helius, AI summaries</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Slide 12: CTA -->
+<div class="slide center-slide" id="slide-12">
+  <div class="logo-mark">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+    <span>TokenTrust</span>
+  </div>
+  <h1>Reputation is the<br>new <span class="accent">currency</span></h1>
+  <p class="subtitle" style="margin-top: 16px;">Try it live — search any Solana token and see trust in action.</p>
+  <div style="margin-top: 40px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+    <span class="tag">fairmint-sigma.vercel.app</span>
+    <span class="tag" style="border-color: var(--muted); color: var(--muted);">github.com/FairScaleOrg/tokentrust</span>
+  </div>
+</div>
+
+<!-- Navigation -->
+<div class="slide-number"><span id="current">1</span> / <span id="total">12</span></div>
+<div class="nav">
+  <button onclick="prev()" aria-label="Previous slide">&#8592;</button>
+  <button onclick="next()" aria-label="Next slide">&#8594;</button>
+</div>
+
+<script>
+  let currentSlide = 1;
+  const totalSlides = 12;
+
+  function show(n) {
+    document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+    currentSlide = Math.max(1, Math.min(n, totalSlides));
+    document.getElementById('slide-' + currentSlide).classList.add('active');
+    document.getElementById('current').textContent = currentSlide;
+  }
+
+  function next() { show(currentSlide + 1); }
+  function prev() { show(currentSlide - 1); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+  });
+
+  show(1);
+</script>
+</body>
+</html>
