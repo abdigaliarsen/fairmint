@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { Shield, Search, LayoutDashboard, LogOut, Scale, Sun, Moon, Clock, Compass, Crown } from "lucide-react";
+import { Shield, Search, LayoutDashboard, LogOut, Scale, Sun, Moon, Clock, Compass, Crown, HelpCircle } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import NotificationBell from "@/components/features/NotificationBell";
+import { useOnboarding } from "@/hooks/useOnboarding";
 
 export default function Header() {
   const { publicKey, disconnect, connected } = useWallet();
@@ -21,6 +22,7 @@ export default function Header() {
   const walletAddress = publicKey?.toBase58() ?? null;
   const { notifications, unreadCount, markAsRead, markAllRead } =
     useNotifications(walletAddress);
+  const { phase, spotlightCompleted, startSpotlightTour } = useOnboarding();
 
   const truncatedAddress = publicKey
     ? `${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}`
@@ -47,25 +49,25 @@ export default function Header() {
 
         {/* Navigation */}
         <nav className="hidden items-center gap-1 sm:flex" aria-label="Main navigation">
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="sm" asChild data-tour="tour-search">
             <Link href="/search">
               <Search className="size-4" />
               Search
             </Link>
           </Button>
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="sm" asChild data-tour="tour-compare">
             <Link href="/compare">
               <Scale className="size-4" />
               Compare
             </Link>
           </Button>
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="sm" asChild data-tour="tour-discover">
             <Link href="/discover">
               <Compass className="size-4" />
               Discover
             </Link>
           </Button>
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="sm" asChild data-tour="tour-wallets">
             <Link href="/wallets">
               <Crown className="size-4" />
               Wallets
@@ -78,7 +80,7 @@ export default function Header() {
             </Link>
           </Button>
           {connected && (
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm" asChild data-tour="tour-dashboard">
               <Link href="/dashboard">
                 <LayoutDashboard className="size-4" />
                 Dashboard
@@ -101,22 +103,22 @@ export default function Header() {
           </Button>
           {/* Mobile nav links */}
           <div className="flex items-center gap-1 sm:hidden">
-            <Button variant="ghost" size="icon" asChild>
+            <Button variant="ghost" size="icon" asChild data-tour="tour-search">
               <Link href="/search" aria-label="Search">
                 <Search className="size-4" />
               </Link>
             </Button>
-            <Button variant="ghost" size="icon" asChild>
+            <Button variant="ghost" size="icon" asChild data-tour="tour-compare">
               <Link href="/compare" aria-label="Compare">
                 <Scale className="size-4" />
               </Link>
             </Button>
-            <Button variant="ghost" size="icon" asChild>
+            <Button variant="ghost" size="icon" asChild data-tour="tour-discover">
               <Link href="/discover" aria-label="Discover">
                 <Compass className="size-4" />
               </Link>
             </Button>
-            <Button variant="ghost" size="icon" asChild>
+            <Button variant="ghost" size="icon" asChild data-tour="tour-wallets">
               <Link href="/wallets" aria-label="Wallets">
                 <Crown className="size-4" />
               </Link>
@@ -127,7 +129,7 @@ export default function Header() {
               </Link>
             </Button>
             {connected && (
-              <Button variant="ghost" size="icon" asChild>
+              <Button variant="ghost" size="icon" asChild data-tour="tour-dashboard">
                 <Link href="/dashboard" aria-label="Dashboard">
                   <LayoutDashboard className="size-4" />
                 </Link>
@@ -135,8 +137,21 @@ export default function Header() {
             )}
           </div>
 
+          {/* Take Tour replay button */}
+          {connected && spotlightCompleted && phase === "idle" && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={startSpotlightTour}
+              aria-label="Take a tour"
+              className="size-8"
+            >
+              <HelpCircle className="size-4" />
+            </Button>
+          )}
+
           {connected && truncatedAddress ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" data-tour="tour-wallet-info">
               <NotificationBell
                 notifications={notifications}
                 unreadCount={unreadCount}
