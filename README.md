@@ -306,9 +306,18 @@ src/
 
 ## Team
 
-| Name | Role | Contact |
-|------|------|---------|
-| Arsen Abdigali | Full-Stack Developer | [@abdigaliarsen](https://x.com/ArsAbdigali) |
+**Arsen Abdigali** — Software Engineer
+
+- BS Computer Science, Nazarbayev University (2025)
+- Currently at ITS Partner / Signify — designing Kubernetes pipelines serving 20M+ users
+- Experience building distributed systems in Go, AWS, and Kubernetes at production scale
+- GitHub: [abdigaliarsen](https://github.com/abdigaliarsen) | X: [@ArsAbdigali](https://x.com/ArsAbdigali)
+
+**Blockchain Track Record:**
+- Winner, Solana Day ($25,000)
+- 3rd Place, Decentrathon 2.0 ($50,000)
+- 2nd Place, Blockchain Hackathon Day ($4,000)
+- Winner, ISSAI GenerativeAI 2024 ($4,000)
 
 ---
 
