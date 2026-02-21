@@ -13,11 +13,11 @@ import NotificationBell from "@/components/features/NotificationBell";
 import { useOnboarding } from "@/hooks/useOnboarding";
 
 export default function Header() {
-  const { publicKey, disconnect, connected } = useWallet();
+  const { publicKey, disconnect } = useWallet();
   const { setVisible } = useWalletModal();
   const { theme, setTheme } = useTheme();
   // Bridges wallet adapter ↔ NextAuth: auto-signs message on connect
-  useWalletAuth();
+  const { isAuthenticated } = useWalletAuth();
 
   const walletAddress = publicKey?.toBase58() ?? null;
   const { notifications, unreadCount, markAsRead, markAllRead } =
@@ -79,7 +79,7 @@ export default function Header() {
               History
             </Link>
           </Button>
-          {connected && (
+          {isAuthenticated && (
             <Button variant="ghost" size="sm" asChild data-tour="tour-dashboard">
               <Link href="/dashboard">
                 <LayoutDashboard className="size-4" />
@@ -128,7 +128,7 @@ export default function Header() {
                 <Clock className="size-4" />
               </Link>
             </Button>
-            {connected && (
+            {isAuthenticated && (
               <Button variant="ghost" size="icon" asChild data-tour="tour-dashboard">
                 <Link href="/dashboard" aria-label="Dashboard">
                   <LayoutDashboard className="size-4" />
@@ -138,7 +138,7 @@ export default function Header() {
           </div>
 
           {/* Take Tour replay button */}
-          {connected && spotlightCompleted && phase === "idle" && (
+          {isAuthenticated && spotlightCompleted && phase === "idle" && (
             <Button
               variant="ghost"
               size="icon"
@@ -150,7 +150,7 @@ export default function Header() {
             </Button>
           )}
 
-          {connected && truncatedAddress ? (
+          {isAuthenticated && truncatedAddress ? (
             <div className="flex items-center gap-2" data-tour="tour-wallet-info">
               <NotificationBell
                 notifications={notifications}
