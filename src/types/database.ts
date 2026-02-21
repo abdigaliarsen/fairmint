@@ -39,7 +39,7 @@ export interface WalletFeatures {
   tx_count: number;
   active_days: number;
   median_gap_hours: number;
-  wallet_age_days: number;
+  wallet_age_score: number;
   [key: string]: number;
 }
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, ExternalLink } from "lucide-react";
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -76,11 +77,15 @@ export default function DeployerSlotContent({ data }: DeployerSlotContentProps) 
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Address + Copy */}
+      {/* Address + Link + Copy */}
       <div className="flex items-center gap-2">
-        <span className="truncate font-mono text-sm text-foreground">
+        <Link
+          href={`/deployer/${data.wallet}`}
+          className="inline-flex items-center gap-1.5 truncate font-mono text-sm text-foreground transition-colors hover:text-emerald-600"
+        >
           {truncateAddress(data.wallet)}
-        </span>
+          <ExternalLink className="size-3 shrink-0 text-muted-foreground" />
+        </Link>
         <Button
           variant="ghost"
           size="icon"
@@ -139,9 +144,9 @@ export default function DeployerSlotContent({ data }: DeployerSlotContentProps) 
             <span className="text-sm font-medium text-muted-foreground">
               Activity
             </span>
-            <FeatureBar label="Transactions" value={data.features.tx_count} max={1000} />
-            <FeatureBar label="Active Days" value={data.features.active_days} max={365} />
-            <FeatureBar label="Wallet Age (days)" value={data.features.wallet_age_days} max={1000} />
+            <FeatureBar label="Transaction Activity" value={data.features.tx_count} max={100} />
+            <FeatureBar label="Active Days" value={data.features.active_days} max={100} />
+            <FeatureBar label="Wallet Age" value={data.features.wallet_age_score} max={100} />
           </div>
         </>
       )}

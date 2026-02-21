@@ -428,22 +428,19 @@ function computeDistributionComponent(holders: TokenHolder[]): number {
 
 /**
  * Compute a wallet age signal (0-100) using real FairScale features.
+ * The FairScale API returns `wallet_age_score` as a 0-100 score directly.
  * Falls back to neutral 50 if features are unavailable.
  */
 function computeAgeComponent(
-  walletAgeDays: number | null,
+  walletAgeScore: number | null,
   activeDays: number | null
 ): number {
-  if (walletAgeDays === null) return 50;
+  if (walletAgeScore === null) return 50;
 
-  let score: number;
-  if (walletAgeDays > 365) score = 90;
-  else if (walletAgeDays > 180) score = 70 + ((walletAgeDays - 180) / 185) * 20;
-  else if (walletAgeDays > 30) score = 30 + ((walletAgeDays - 30) / 150) * 40;
-  else score = (walletAgeDays / 30) * 30;
+  let score = Math.min(100, walletAgeScore);
 
-  // Bonus for active usage
-  if (activeDays !== null && activeDays > 100) {
+  // Bonus for high activity score
+  if (activeDays !== null && activeDays > 70) {
     score = Math.min(100, score + 10);
   }
 
@@ -631,7 +628,7 @@ export async function analyzeToken(
   const holderQualityComponent = computeHolderQualityComponent(holderScores);
   const distributionComponent = computeDistributionComponent(holders);
   const ageComponent = computeAgeComponent(
-    deployerFeatures?.wallet_age_days ?? null,
+    deployerFeatures?.wallet_age_score ?? null,
     deployerFeatures?.active_days ?? null
   );
   const patternComponent = computePatternComponent(riskFlags);

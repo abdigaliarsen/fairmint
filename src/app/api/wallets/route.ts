@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
         score: row.score_integer,
         tier: row.tier,
         badges: row.badges,
-        walletAgeDays: features?.wallet_age_days ?? null,
+        walletAgeScore: features?.wallet_age_score ?? null,
         txCount: features?.tx_count ?? null,
         activeDays: features?.active_days ?? null,
         fetchedAt: row.fetched_at,

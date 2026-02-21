@@ -27,10 +27,8 @@ function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
-function formatDays(days: number): string {
-  if (days >= 365) return `${(days / 365).toFixed(1)}y`;
-  if (days >= 30) return `${Math.round(days / 30)}mo`;
-  return `${days}d`;
+function formatScore(score: number): string {
+  return `${Math.round(score)}/100`;
 }
 
 // ---------------------------------------------------------------------------
@@ -151,22 +149,22 @@ export default function WalletsPage() {
                         </Badge>
                       </div>
                       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                        {wallet.walletAgeDays != null && (
+                        {wallet.walletAgeScore != null && (
                           <span className="flex items-center gap-1">
                             <Clock className="size-3" />
-                            {formatDays(wallet.walletAgeDays)}
+                            Age {formatScore(wallet.walletAgeScore)}
                           </span>
                         )}
                         {wallet.txCount != null && (
                           <span className="flex items-center gap-1">
                             <Hash className="size-3" />
-                            {wallet.txCount.toLocaleString()} txns
+                            Tx {formatScore(wallet.txCount)}
                           </span>
                         )}
                         {wallet.activeDays != null && (
                           <span className="flex items-center gap-1">
                             <Activity className="size-3" />
-                            {wallet.activeDays} active days
+                            Activity {formatScore(wallet.activeDays)}
                           </span>
                         )}
                       </div>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { X, Trophy, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
+import Link from "next/link";
+import { X, Trophy, AlertTriangle, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import type { RiskFlag } from "@/types/database";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -169,12 +170,18 @@ function TokenSlotContent({ token }: { token: import("@/services/tokenAnalyzer")
     <>
       <CardHeader className="pb-3 pt-6">
         <CardTitle className="truncate text-lg">
-          {token.name ?? "Unknown"}
-          {token.symbol && (
-            <span className="ml-1.5 text-base font-normal text-muted-foreground">
-              ${token.symbol}
-            </span>
-          )}
+          <Link
+            href={`/token/${token.mint}`}
+            className="inline-flex items-center gap-1.5 transition-colors hover:text-emerald-600"
+          >
+            {token.name ?? "Unknown"}
+            {token.symbol && (
+              <span className="text-base font-normal text-muted-foreground">
+                ${token.symbol}
+              </span>
+            )}
+            <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
+          </Link>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">

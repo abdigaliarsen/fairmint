@@ -8,7 +8,7 @@ export interface LeaderboardWallet {
   score: number;
   tier: FairScoreTier;
   badges: Badge[];
-  walletAgeDays: number | null;
+  walletAgeScore: number | null;
   txCount: number | null;
   activeDays: number | null;
   fetchedAt: string;

@@ -22,10 +22,8 @@ interface WalletAnalyticsChartProps {
   features: WalletFeatures | null | undefined;
 }
 
-function formatDays(days: number): string {
-  if (days >= 365) return `${(days / 365).toFixed(1)}y`;
-  if (days >= 30) return `${Math.round(days / 30)}mo`;
-  return `${days}d`;
+function formatScore(score: number): string {
+  return `${Math.round(score)}/100`;
 }
 
 export default function WalletAnalyticsChart({
@@ -60,44 +58,37 @@ export default function WalletAnalyticsChart({
     },
     {
       metric: "Activity",
-      value: Math.min(
-        100,
-        Math.round(
-          ((features.active_days ?? 0) /
-            Math.max(1, features.wallet_age_days ?? 1)) *
-            100
-        )
-      ),
+      value: pct(features.active_days),
     },
     {
       metric: "Tx Volume",
-      value: Math.min(100, Math.round(((features.tx_count ?? 0) / 5000) * 100)),
+      value: pct(features.tx_count),
     },
   ];
 
   const stats = [
     {
       label: "Wallet Age",
-      value: features.wallet_age_days != null
-        ? formatDays(features.wallet_age_days)
+      value: features.wallet_age_score != null
+        ? formatScore(features.wallet_age_score)
         : "N/A",
     },
     {
-      label: "Transactions",
+      label: "Tx Activity",
       value: features.tx_count != null
-        ? features.tx_count.toLocaleString()
+        ? formatScore(features.tx_count)
         : "N/A",
     },
     {
       label: "Active Days",
       value: features.active_days != null
-        ? features.active_days.toLocaleString()
+        ? formatScore(features.active_days)
         : "N/A",
     },
     {
-      label: "Median Gap",
+      label: "Consistency",
       value: features.median_gap_hours != null
-        ? `${features.median_gap_hours.toFixed(0)}h`
+        ? formatScore(features.median_gap_hours)
         : "N/A",
     },
   ];
