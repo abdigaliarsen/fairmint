@@ -311,7 +311,7 @@ src/
 - BS Computer Science, Nazarbayev University (2025)
 - Currently at ITS Partner / Signify — designing Kubernetes pipelines serving 20M+ users
 - Experience building distributed systems in Go, AWS, and Kubernetes at production scale
-- GitHub: [abdigaliarsen](https://github.com/abdigaliarsen) | X: [@ArsAbdigali](https://x.com/ArsAbdigali)
+- GitHub: [abdigaliarsen](https://github.com/abdigaliarsen) | X: [@AbdigaliArsen](https://x.com/AbdigaliArsen)
 
 **Blockchain Track Record:**
 - Winner, Solana Day ($25,000)
